@@ -93,14 +93,19 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
-     * Return an object in the same namespace than now
+     * Return an object in the same namespace than the current class
      *
-     * @param $object
+     * @param $object_name
      * @return mixed
      */
-    static function object($object)
+    static function object($object_name)
     {
-        $path = __NAMESPACE__ . '\\' . $object;
+        $path_class_reference = static::class;
+        if (($pos = strrpos($path_class_reference, '\\')) !== false) {
+            $path_class_reference = substr($path_class_reference, 0, $pos);
+        }
+
+        $path = $path_class_reference . '\\' . ucfirst($object_name);
 
         return new $path();
     }

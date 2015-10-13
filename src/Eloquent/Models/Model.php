@@ -4,6 +4,7 @@ namespace Jchedev\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Collection;
 
 abstract class Model extends \Illuminate\Database\Eloquent\Model
 {
@@ -16,13 +17,19 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      */
     public function __call($method, $parameters)
     {
+        /*
+         * Proxy method for $this->relation_name which return the query results of a relation. Can define first parameter as true, to always return an object even if NULL
+         */
         if (preg_match('/^associated(.*)$/', $method, $method_info) == 1) {
             $relation_name = lcfirst($method_info[1]);
             $load_empty_object = array_get($parameters, 0, false);
             if (($found = $this->retrieveRelationObject($relation_name, $load_empty_object)) !== false) {
                 return $found;
             }
-        } else {
+        } /*
+         * Proxy method to link an object through a relation. The action will be selected based on the type of relation
+         */
+        else {
             if (preg_match('/^addAssociated(.*)$/', $method, $method_info) == 1 && !is_null($object = array_get($parameters, 0))) {
                 $relation_name = lcfirst($method_info[1]);
 
@@ -70,18 +77,11 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
             switch (get_class($relation)) {
 
                 case BelongsToMany::class:
-                    $objects = collect(!is_array($object) ? [$object] : $object);
-
-                    $not_existing = $objects->diff($this->retrieveRelationObject($relation_name));
-                    if (count($not_existing) != 0) {
-                        $return = $relation->saveMany($not_existing->all());
-                    }
-                    unset($objects, $not_existing);
+                    $return = $this->addBelongsToManyRelationObject($relation, collect(!is_array($object) ? [$object] : $object));
                     break;
 
                 case MorphTo::class:
-                    $relation->associate($object);
-                    $return = $this->save();
+                    $return = $this->addMorphToRelationObject($relation, $object);
                     break;
 
                 default:
@@ -96,6 +96,42 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
         }
 
         return $return;
+    }
+
+    /**
+     * Add a new collection of objects to a BelongsToMany collection (if the object is not already associated
+     *
+     * @param BelongsToMany $relation
+     * @param Collection $objects
+     * @return array|null
+     */
+    private function    addBelongsToManyRelationObject(BelongsToMany $relation, Collection $objects)
+    {
+        $return = null;
+        $relation_name = $relation->getRelationName();
+
+        $not_existing = $objects->diff($this->retrieveRelationObject($relation_name));
+        if (count($not_existing) != 0) {
+            $return = $relation->saveMany($not_existing->all());
+        }
+
+        unset($objects, $not_existing);
+
+        return $return;
+    }
+
+    /**
+     * Add a new object for a morphTo relation
+     *
+     * @param MorphTo $relation
+     * @param \Illuminate\Database\Eloquent\Model $object
+     * @return bool
+     */
+    private function    addMorphToRelationObject(MorphTo $relation, \Illuminate\Database\Eloquent\Model $object)
+    {
+        $relation->associate($object);
+
+        return $this->save();
     }
 
     /**

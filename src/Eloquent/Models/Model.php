@@ -78,6 +78,11 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
                     unset($objects, $not_existing);
                     break;
 
+                case MorphTo::class:
+                    $relation->associate($object);
+                    $return = $this->save();
+                    break;
+
                 default:
                     // todo : we need to implement the other type of relations
                     exit;

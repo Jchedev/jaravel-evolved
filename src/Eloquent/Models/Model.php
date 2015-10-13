@@ -3,6 +3,7 @@
 namespace Jchedev\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 abstract class Model extends \Illuminate\Database\Eloquent\Model
 {

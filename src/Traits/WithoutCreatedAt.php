@@ -15,7 +15,7 @@ trait WithoutCreatedAt
      *
      * @param $value
      */
-    public function setCreatedAtAtAttribute($value)
+    public function setCreatedAtAttribute($value)
     {
         // Disabled
     }

@@ -4,7 +4,9 @@ namespace Jchedev\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
+use Jchedev\Eloquent\Builders\Builder;
 
 abstract class Model extends \Illuminate\Database\Eloquent\Model
 {
@@ -26,10 +28,10 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
             if (($found = $this->retrieveRelationObject($relation_name, $load_empty_object)) !== false) {
                 return $found;
             }
-        } /*
-         * Proxy method to link an object through a relation. The action will be selected based on the type of relation
-         */
-        else {
+        } else {
+            /*
+             * Proxy method to link an object through a relation. The action will be selected based on the type of relation
+             */
             if (preg_match('/^addAssociated(.*)$/', $method, $method_info) == 1 && !is_null($object = array_get($parameters, 0))) {
                 $relation_name = lcfirst($method_info[1]);
 
@@ -38,6 +40,17 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
         }
 
         return parent::__call($method, $parameters);
+    }
+
+    /**
+     * Overwrite the Eloquent\Builder by a custom one with even more features
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     * @return Builder
+     */
+    public function newEloquentBuilder($query)
+    {
+        return new Builder($query);
     }
 
     /**
@@ -181,7 +194,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      */
     public function getTableColumn($column)
     {
-        if (is_a($column, \Illuminate\Database\Query\Expression::class)) {
+        if (is_a($column, Expression::class)) {
             return $column;
         }
 

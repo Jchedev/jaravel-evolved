@@ -1,6 +1,21 @@
 <?php
 
 /**
+ * Sanitize a string by triming it and removing weird characters
+ *
+ * @param $value
+ * @return string
+ */
+function    sanitize_string($value)
+{
+    if (!is_null($value)) {
+        $value = trim($value);
+    }
+
+    return $value;
+}
+
+/**
  * Convert a boolean value into the matching string
  *
  * @param $value

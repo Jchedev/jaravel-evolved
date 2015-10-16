@@ -17,7 +17,6 @@
     },
     "files": [
       "src/helpers/arrays.php",
-      "src/helpers/configs.php",
       "src/helpers/objects.php",
       "src/helpers/strings.php",
       "src/helpers/templates.php"

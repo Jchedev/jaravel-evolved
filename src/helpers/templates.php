@@ -32,16 +32,21 @@ function    asset_js($path)
 function    css_grid($value, $grid_size = 12)
 {
     $classes = ['col'];
+    $defined = ['full' => 1, 'half' => 2, 'third' => 3, 'fourth' => 4];
 
+    $current_value = 'full';
     foreach (['phone' => 's%', 'tablet' => 'm%', 'desktop' => 'l%'] as $device => $class_format) {
-        if (is_int($value)) {
-            $grid_size = $value;
+        if (is_int($value) || is_string($value)) {
+            $current_value = $value;
         } else {
             if (is_array($value) && isset($value[$device])) {
-                $grid_size = $value[$device];
+                $current_value = $value[$device];
             }
         }
-        $classes[] = str_replace('%', $grid_size, $class_format);
+
+        $current_value = isset($defined[$current_value]) ? ($grid_size / $defined[$current_value]) : $current_value;
+
+        $classes[] = str_replace('%', $current_value, $class_format);
     }
 
     return implode(' ', $classes);

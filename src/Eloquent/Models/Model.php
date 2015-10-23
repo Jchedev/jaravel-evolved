@@ -68,7 +68,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
 
         $object_in_relation = $this->$relation_name;
         if (is_null($object_in_relation) && $return_empty_object === true) {
-            $object_in_relation = Model::object($relation_name);
+            $object_in_relation = self::object($relation_name);
         }
 
         return $object_in_relation;
@@ -155,7 +155,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      */
     static function object($object_name)
     {
-        $path_class_reference = self::class;
+        $path_class_reference = static::class;
         if (($pos = strrpos($path_class_reference, '\\')) !== false) {
             $path_class_reference = substr($path_class_reference, 0, $pos);
         }

@@ -155,7 +155,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      */
     static function object($object_name)
     {
-        $path_class_reference = static::class;
+        $path_class_reference = self::class;
         if (($pos = strrpos($path_class_reference, '\\')) !== false) {
             $path_class_reference = substr($path_class_reference, 0, $pos);
         }

@@ -11,7 +11,7 @@ class Listing implements Jsonable
     /**
      * Default values
      */
-    const   DEFAULT_PAGE_SIZE = 5;
+    const   DEFAULT_PAGE_SIZE = 25;
     const   DEFAULT_SORT_FIELD = 'id';
     const   DEFAULT_SORT_ORDER = 'DESC';
 
@@ -36,9 +36,9 @@ class Listing implements Jsonable
     private $_sort_fields = ['id', 'created_at', 'updated_at'];
 
     /**
-     * @var array List of parameters to return in toArray
+     * @var \Closure List of parameters to return in toArray
      */
-    protected $_fields_returned = ['only' => [], 'add' => [], 'remove' => []];
+    protected $_fields_returned;
 
     /**
      * @var array List of relations to load on the objects
@@ -94,7 +94,7 @@ class Listing implements Jsonable
                 break;
 
             case 'fields':
-                $this->setFieldsReturned($configuration_value);
+                $this->fieldsReturned($configuration_value);
                 break;
         }
 
@@ -268,7 +268,8 @@ class Listing implements Jsonable
     {
         $first_id = $this->getFirstId();
         if (!is_null($first_id)) {
-            $builder->where('id', '>', $first_id);
+            $direction = ($this->getOrderBy()[1] == 'DESC' ? '<' : '>');
+            $builder->where($this->_default_builder->getModel()->getTableColumn('id'), $direction, $first_id);
         }
     }
 
@@ -375,69 +376,16 @@ class Listing implements Jsonable
      */
 
     /**
-     * Set the list of fields to return in toArray
+     * Add a new ListingField object to the correct array
      *
-     * @param array $fields
-     * @param string $in
+     * @param \Closure|null $function
      * @return $this
      */
-    public function setFieldsReturned(Array $fields, $in = 'only')
+    public function    fieldsReturned(\Closure $function = null)
     {
-        $fields = array_dot($fields);
-
-        foreach ($fields as $key => $field) {
-            if (is_int($key)) {
-                $key = (string)$field;
-            } else {
-                if (strstr($key, '.')) {
-                    $relation_name = substr($key, 0, strrpos($key, '.'));
-                    $key_name = substr($key, strrpos($key, '.') + 1);
-
-                    // The key is current xxxx.0 because we didn't specify a custom name
-                    if ((string)intval($key_name) == $key_name) {
-                        $new_key_name = $field;
-
-                        // If the field has also a ".", we check if we should append the whole string to the $key
-                        if (strstr($new_key_name, '.')) {
-                            $new_key_name_relation = substr($new_key_name, 0, strrpos($new_key_name, '.'));
-                            $new_key_name_key = substr($new_key_name, strrpos($new_key_name, '.') + 1);
-
-                            if ($new_key_name_relation == $relation_name) {
-                                $new_key_name = $new_key_name_key;
-                            }
-                        }
-
-                        $key = $relation_name . '.' . str_replace('.', '_', $new_key_name);
-                    }
-                }
-            }
-
-            $this->_fields_returned[$in][$key] = $field;
-        }
+        $this->_fields_returned = $function;
 
         return $this;
-    }
-
-    /**
-     * Add extra fields to the default returned
-     *
-     * @param array $fields
-     * @return Listing
-     */
-    public function addFieldsReturned(Array $fields)
-    {
-        return $this->setFieldsReturned($fields, 'add');
-    }
-
-    /**
-     * Remove some fields for the default returned
-     *
-     * @param array $fields
-     * @return Listing
-     */
-    public function removeFieldsReturned(Array $fields)
-    {
-        return $this->setFieldsReturned($fields, 'remove');
     }
 
     /**
@@ -445,9 +393,9 @@ class Listing implements Jsonable
      *
      * @return array
      */
-    public function fieldsReturned()
+    public function getFieldsReturned()
     {
-        return array_keys($this->_fields_returned);
+        return $this->_fields_returned;
     }
 
     /*
@@ -545,6 +493,11 @@ class Listing implements Jsonable
         return $return;
     }
 
+    /**
+     * Return info about pagination
+     *
+     * @return array
+     */
     public function getPaginationInfo()
     {
         $return = [
@@ -667,6 +620,7 @@ class Listing implements Jsonable
         }
 
         $builder = $this->getUnPaginatedBuilder();
+        $builder->groupBy($builder->getModel()->getTableColumn('id'));
 
         $this->applyPageSize($builder);
         $this->applyPaginationType($builder);
@@ -708,21 +662,13 @@ class Listing implements Jsonable
      */
     private function    getDataElement(Model $element)
     {
-        $element_values = $element->toArray();
-        $values = (count($this->_fields_returned['only']) != 0) ? [] : array_except($element_values, array_keys($this->_fields_returned['remove']));
-
-        $all_fields = array_merge($this->_fields_returned['only'], $this->_fields_returned['add']);
-        foreach ($all_fields as $field_name => $field_value) {
-
-            $field_value = is_callable($field_value) ? $field_value($element) : array_get($element_values, $field_value);
-
-            $values = array_add($values, $field_name, $field_value);
-            unset($field_value);
+        if (is_null($this->_fields_returned)) {
+            return $element->toArray();
         }
 
-        unset($element_values);
+        $closure_name = $this->_fields_returned;
 
-        return $values;
+        return $closure_name($element);
     }
 
     /**

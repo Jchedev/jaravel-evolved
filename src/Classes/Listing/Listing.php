@@ -5,6 +5,7 @@ namespace Jchedev\Classes\Listing;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class Listing implements Jsonable
 {
@@ -62,6 +63,9 @@ class Listing implements Jsonable
         } // Is the listing based on a defined builder?
         elseif (is_a($listing_type, Builder::class)) {
             $this->_default_builder = clone $listing_type;
+        } // Is the listing based on a relation?
+        elseif (is_a($listing_type, Relation::class)) {
+            $this->_default_builder = $listing_type->getQuery();
         }
 
         // Initialize the default sortFields

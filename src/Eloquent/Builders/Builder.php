@@ -92,14 +92,18 @@ class Builder extends EloquentBuilder
      * @param null $as
      * @return $this
      */
-    public function addSelectFromBuilder(QueryBuilder $builder, $as = null)
+    public function addSelectFromBuilder($builder, $as = null)
     {
         $sql = '(' . $builder->toSql() . ')';
         if (!is_null($as)) {
             $sql .= ' as ' . $as;
         }
 
-        $this->addSelect(\DB::raw($sql))->mergeBindings($builder->getQuery());
+        $this->addSelect(\DB::raw($sql));
+
+        foreach ($builder->getBindings() as $binding) {
+            $this->addBinding($binding, 'select');
+        }
 
         return $this;
     }

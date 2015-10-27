@@ -29,12 +29,12 @@ class Listing implements Jsonable
     /**
      * @var array Collect parameters applied to the builder during the life of the listing
      */
-    private $_parameters = [];
+    private $_builder_parameters = [];
 
     /**
      * @var array Configuration of the listing (list of sorting acceptable values)
      */
-    private $_sort_fields = ['id', 'created_at', 'updated_at'];
+    protected $_sort_fields = ['id', 'created_at', 'updated_at'];
 
     /**
      * @var \Closure List of parameters to return in toArray
@@ -54,22 +54,10 @@ class Listing implements Jsonable
      */
     public function __construct($listing_type = null, Array $configuration = [])
     {
-        // Is the listing based on a string?
-        if (is_string($listing_type)) {
-            $this->_default_builder = (new $listing_type())->newQuery();
-        } // Is the listing based on a model object?
-        elseif (is_a($listing_type, Model::class)) {
-            $this->_default_builder = $listing_type->newQuery();
-        } // Is the listing based on a defined builder?
-        elseif (is_a($listing_type, Builder::class)) {
-            $this->_default_builder = clone $listing_type;
-        } // Is the listing based on a relation?
-        elseif (is_a($listing_type, Relation::class)) {
-            $this->_default_builder = $listing_type->getQuery();
+        // Based on the listing_type variable, we generate the correct _default_builder
+        if (!is_null($listing_type)) {
+            $this->_default_builder = $this->convertAsBuilder($listing_type);
         }
-
-        // Initialize the default sortFields
-        $this->addConfiguration('sort', $this->_sort_fields, true);
 
         // Apply customized configuration on the listing
         foreach ($configuration as $key => $value) {
@@ -78,36 +66,117 @@ class Listing implements Jsonable
     }
 
     /**
+     * Convert a variable into the correct builder based on the variable type, etc...
+     *
+     * @param $listing_type
+     * @return mixed
+     */
+    protected function  convertAsBuilder($listing_type)
+    {
+        if (is_string($listing_type)) {
+            /*
+             * Type: String
+             * We consider the string as the name of the Model used and get the builder for it
+             */
+            return (new $listing_type())->newQuery();
+
+        } elseif (is_a($listing_type, Model::class)) {
+            /*
+             * Type: \Eloquent\Model
+             * We get the builder associated
+             */
+            return $listing_type->newQuery();
+
+        } elseif (is_a($listing_type, Builder::class)) {
+            /*
+             * Type: \Eloquent\Builder
+             * It is already a builder, so we just clone it
+             */
+            return clone $listing_type;
+
+        } elseif (is_a($listing_type, Relation::class)) {
+            /*
+             * Type: \Eloquent\Relations
+             * The listing is a relation, so we transform it as a builder
+             */
+            return $listing_type->getQuery();
+        }
+    }
+
+
+    /**
      * Add a new configuration to the list. Can also erase previous values if necessary
      *
      * @param $configuration_key
      * @param $configuration_value
-     * @param bool|false $reset_values
      * @return $this
      */
-    protected function addConfiguration($configuration_key, $configuration_value, $reset_values = false)
+    protected function addConfiguration($configuration_key, $configuration_value)
     {
         switch ($configuration_key) {
+
+            /*
+             * Add configuration about which sort fields are accepted
+             */
             case 'sort':
-                if ($reset_values === true) {
-                    $this->_sort_fields = [];
-                }
                 foreach ((array)$configuration_value as $key => $value) {
-                    $this->_sort_fields[!is_int($key) ? $key : (string)$value] = $value;
+                    $this->sortField($value, $key);
                 }
                 break;
 
+            /*
+             * Add configuration about which fields are returned for the call
+             */
             case 'fields':
                 $this->fieldsReturned($configuration_value);
                 break;
         }
 
-
         return $this;
     }
 
     /*
-     * ------> sortBy: Apply the sortBy on the listing <-------
+     * ------> sortFields: Which fields can be used to sort <-------
+     */
+
+    /**
+     * Add a new sort fields
+     *
+     * @param $field
+     * @param null $as
+     * @return $this
+     */
+    public function sortField($field, $as = null)
+    {
+        if (is_null($as)) {
+            $this->_sort_fields[] = $field;
+        } else {
+            $this->_sort_fields[$as] = $field;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Return the sort fields correctly grouped key/value
+     *
+     * @return array
+     */
+    public function getSortFields()
+    {
+        $fields = [];
+        foreach ($this->_sort_fields as $key => $field) {
+            if (is_int($key)) {
+                $key = $field;
+            }
+            $fields[$key] = $field;
+        }
+
+        return $fields;
+    }
+
+    /*
+     * ------> orderBy: Apply the sortBy on the listing <-------
      */
 
     /**
@@ -119,8 +188,10 @@ class Listing implements Jsonable
      */
     public function orderBy($field, $order = 'ASC')
     {
-        if (!isset($this->_sort_fields[$field])) {
-            $this->invalidArgumentException('Invalid order value', $field, array_keys($this->_sort_fields));
+        $allowed_columns = array_keys($this->getSortFields());
+
+        if (!in_array($field, $allowed_columns)) {
+            $this->invalidArgumentException('Invalid order value', $field, $allowed_columns);
         }
 
         return $this->setParameter('sort', [$field, $order]);
@@ -135,8 +206,10 @@ class Listing implements Jsonable
      */
     public function addOrderBy($field, $order = 'ASC')
     {
-        if (!isset($this->_sort_fields[$field])) {
-            $this->invalidArgumentException('Invalid order value', $field, array_keys($this->_sort_fields));
+        $allowed_columns = array_keys($this->getSortFields());
+
+        if (!in_array($field, $allowed_columns)) {
+            $this->invalidArgumentException('Invalid order value', $field, $allowed_columns);
         }
 
         return $this->setParameterArray('extra_sort', [$field, $order]);
@@ -151,8 +224,10 @@ class Listing implements Jsonable
     {
         $sort = $this->getParameter('sort', null);
         if (is_null($sort)) {
-            if (isset($this->_sort_fields[self::DEFAULT_SORT_FIELD])) {
-                $sort = [$this->_sort_fields[self::DEFAULT_SORT_FIELD], self::DEFAULT_SORT_ORDER];
+            $sort_fields = $this->getSortFields();
+
+            if (isset($sort_fields[self::DEFAULT_SORT_FIELD])) {
+                $sort = [$sort_fields[self::DEFAULT_SORT_FIELD], self::DEFAULT_SORT_ORDER];
             } else {
                 $sort = [self::DEFAULT_SORT_FIELD, self::DEFAULT_SORT_ORDER];
             }
@@ -182,7 +257,11 @@ class Listing implements Jsonable
     {
         $sort = $this->getAllOrderBy();
         foreach ($sort as $sort_info) {
-            $builder->orderBy($this->_default_builder->getModel()->getTableColumn($sort_info[0]), $sort_info[1]);
+            if (method_exists($this->_default_builder->getModel(), 'getTableColumn')) {
+                $sort_info[0] = $this->_default_builder->getModel()->getTableColumn($sort_info[0]);
+            }
+
+            $builder->orderBy($sort_info[0], $sort_info[1]);
         }
     }
 
@@ -196,13 +275,13 @@ class Listing implements Jsonable
      * @param null $size_set
      * @return mixed
      */
-    public function pageSize($size_set)
+    public function limit($size_set = null)
     {
-        if (!is_int($size_set) || $size_set <= 0) {
-            $this->invalidArgumentException('PageSize has to be an integer > 0', $size_set);
+        if (!is_null($size_set) && (!is_int($size_set) || $size_set <= 0)) {
+            $this->invalidArgumentException('Limit has to be an integer > 0', $size_set);
         }
 
-        return $this->setParameter('page_size', $size_set);
+        return $this->setParameter('limit', $size_set);
     }
 
     /**
@@ -210,9 +289,9 @@ class Listing implements Jsonable
      *
      * @return mixed
      */
-    public function getPageSize()
+    public function getLimit()
     {
-        return $this->getParameter('page_size', self::DEFAULT_PAGE_SIZE);
+        return $this->getParameter('limit', self::DEFAULT_PAGE_SIZE);
     }
 
     /**
@@ -220,159 +299,51 @@ class Listing implements Jsonable
      *
      * @param Builder $builder
      */
-    protected function  applyPageSize(Builder $builder)
+    protected function  applyLimit(Builder $builder)
     {
-        $page_size = $this->getPageSize();
+        $page_size = $this->getLimit();
         if (!is_null($page_size)) {
             $builder->take($page_size);
         }
     }
 
     /*
-     * ------> FirstID : Management of the pagination based on the previous ID <-------
+     * ------> PageSize : Enable/Set the use of pagination (X elements by query) <-------
      */
 
     /**
-     * Set OR return the current page number
+     * Set OR return the number of elements by page
      *
-     * @param null $last_id_found
+     * @param $offset
      * @return mixed
      */
-    public function firstId($last_id_found)
+    public function offset($offset)
     {
-        if (!is_int($last_id_found) || $last_id_found <= 0) {
-            $this->invalidArgumentException('FirstId has to be an integer > 0', $last_id_found);
+        if (!is_int($offset) || $offset < 0) {
+            $this->invalidArgumentException('Offset has to be an integer >= 0', $offset);
         }
 
-        $this->paginationType('id');
-
-        return $this->setParameter('first_id', $last_id_found);
+        return $this->setParameter('offset', $offset);
     }
 
     /**
-     * Return the current page number
+     * Return the number of elements by page (or NULL if disabled)
      *
      * @return mixed
      */
-    public function getFirstId()
+    public function getOffset()
     {
-        if ($this->getPaginationType() != 'id') {
-            return null;
-        }
-
-        return $this->getParameter('first_id', null);
+        return $this->getParameter('offset', 0);
     }
 
     /**
-     * Apply the First id limitation on the builder
+     * Apply logic of pageSize on the builder
      *
      * @param Builder $builder
      */
-    protected function applyFirstId(Builder $builder)
+    protected function  applyOffset(Builder $builder)
     {
-        $first_id = $this->getFirstId();
-        if (!is_null($first_id)) {
-            $direction = ($this->getOrderBy()[1] == 'DESC' ? '<' : '>');
-            $builder->where($this->_default_builder->getModel()->getTableColumn('id'), $direction, $first_id);
-        }
-    }
-
-    /*
-     * ------> Page : Management of the page number for this listing query <-------
-     */
-
-    /**
-     * Set OR return the current page number
-     *
-     * @param null $page_number
-     * @return mixed
-     */
-    public function page($page_number)
-    {
-        if (!is_int($page_number) || $page_number <= 0) {
-            $this->invalidArgumentException('Page has to be an integer > 0', $page_number);
-        }
-
-        $this->paginationType('page');
-
-        return $this->setParameter('page', $page_number);
-    }
-
-    /**
-     * Return the current page number
-     *
-     * @return mixed
-     */
-    public function getPage()
-    {
-        if ($this->getPaginationType() != 'page') {
-            return null;
-        }
-
-        return $this->getParameter('page', 1);
-    }
-
-    /**
-     * Apply the Pagination by "page" logic on the builder
-     *
-     * @param Builder $builder
-     */
-    protected function applyPage(Builder $builder)
-    {
-        $page_number = $this->getPage();
-        $page_size = $this->getPageSize();
-
-        if (!is_null($page_number) && !is_null($page_size)) {
-            $builder->skip(($page_number - 1) * $page_size);
-        }
-    }
-
-    /*
-     * ------> PaginationType : How do we paginate the query? By last ID or pages <-------
-     */
-
-    /**
-     * Set the type of pagination
-     *
-     * @param $type
-     * @return Listing
-     */
-    public function paginationType($type)
-    {
-        $accepted_types = ['id', 'page'];
-        if (!in_array($type, $accepted_types)) {
-            $this->invalidArgumentException('Invalid pagination type', $type, $accepted_types);
-        }
-
-        return $this->setParameter('pagination_type', $type);
-    }
-
-    /**
-     * Return the current page number
-     *
-     * @return mixed
-     */
-    public function getPaginationType()
-    {
-        return $this->getParameter('pagination_type', 'page');
-    }
-
-    /**
-     * Apply the type of pagination on the builder
-     *
-     * @param Builder $builder
-     */
-    protected function applyPaginationType(Builder $builder)
-    {
-        switch ($this->getPaginationType()) {
-            case 'id':
-                $this->applyFirstId($builder);
-                break;
-
-            case 'page':
-                $this->applyPage($builder);
-                break;
-        }
+        $builder->skip($this->getOffset());
     }
 
     /*
@@ -465,7 +436,7 @@ class Listing implements Jsonable
      */
     public function count()
     {
-        return $this->getUnPaginatedBuilder()->count();
+        return $this->getBuilder()->skip(null)->count();
     }
 
     /*
@@ -498,32 +469,6 @@ class Listing implements Jsonable
     }
 
     /**
-     * Return info about pagination
-     *
-     * @return array
-     */
-    public function getPaginationInfo()
-    {
-        $return = [
-            'total_elements' => $this->count(),
-        ];
-        switch ($this->getPaginationType()) {
-            case 'id':
-                $return['current_id'] = $this->get()->last()->id;
-                break;
-
-            case 'page':
-                $return['pages'] = [
-                    'total'   => ceil($return['total_elements'] / $this->getPageSize()),
-                    'current' => $this->getPage()
-                ];
-                break;
-        }
-
-        return $return;
-    }
-
-    /**
      * Return the info about the objects AND the pagination in a global array
      *
      * @return array
@@ -531,8 +476,8 @@ class Listing implements Jsonable
     public function toArray()
     {
         return [
-            'data'       => $this->getData(),
-            'pagination' => $this->getPaginationInfo()
+            'results' => $this->getData(),
+            'total'   => $this->count()
         ];
     }
 
@@ -572,7 +517,7 @@ class Listing implements Jsonable
     {
         $previous_value = $this->getParameter($key);
         if ($previous_value != $value) {
-            $this->_parameters[$key] = $value;
+            $this->_builder_parameters[$key] = $value;
             $this->resetCollection();
         }
 
@@ -592,7 +537,7 @@ class Listing implements Jsonable
 
         $value_identifier = !is_array($value) ? $value : implode('-', $value);
         if (!isset($previous_value[$value_identifier])) {
-            $this->_parameters[$key][$value_identifier] = $value;
+            $this->_builder_parameters[$key][$value_identifier] = $value;
             $this->resetCollection();
         }
 
@@ -608,7 +553,7 @@ class Listing implements Jsonable
      */
     private function    getParameter($key, $default_value = null)
     {
-        return array_get($this->_parameters, $key, $default_value);
+        return array_get($this->_builder_parameters, $key, $default_value);
     }
 
     /**
@@ -623,25 +568,11 @@ class Listing implements Jsonable
             throw new \Exception('Undefined initial builder');
         }
 
-        $builder = $this->getUnPaginatedBuilder();
-        $builder->groupBy($builder->getModel()->getTableColumn('id'));
-
-        $this->applyPageSize($builder);
-        $this->applyPaginationType($builder);
-
-        return $builder;
-    }
-
-    /**
-     * Generate a builder WITHOUT any pagination logic
-     *
-     * @return Builder|null
-     */
-    private function    getUnPaginatedBuilder()
-    {
         $builder = clone $this->_default_builder;
 
         $this->applyOrderBy($builder);
+        $this->applyLimit($builder);
+        $this->applyOffset($builder);
 
         return $builder;
     }

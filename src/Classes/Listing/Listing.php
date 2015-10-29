@@ -476,8 +476,9 @@ class Listing implements Jsonable
     public function toArray()
     {
         return [
-            'results' => $this->getData(),
-            'total'   => $this->count()
+            'results'   => $this->getData(),
+            'total'     => $this->count(),
+            'completed' => $this->isAtTheEnd()
         ];
     }
 
@@ -500,6 +501,22 @@ class Listing implements Jsonable
     public function toJson($options = 0)
     {
         return json_encode($this->toArray(), $options);
+    }
+
+    /**
+     * Test if this request is the last to do
+     *
+     * @return bool|null
+     */
+    public function isAtTheEnd()
+    {
+        if (is_null($this->_collection)) {
+            return null;
+        }
+
+        $size = $this->getLimit();
+
+        return is_null($size) || (count($this->_collection) < $size);
     }
 
     /*

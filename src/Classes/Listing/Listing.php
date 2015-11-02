@@ -124,11 +124,23 @@ class Listing implements Jsonable
                 }
                 break;
 
+            case 'order':
+                $this->sortField($configuration_value);
+                $this->orderBy($configuration_value);
+                break;
+
             /*
              * Add configuration about which fields are returned for the call
              */
             case 'fields':
                 $this->fieldsReturned($configuration_value);
+                break;
+
+            /*
+             * Automatically add some relations to load in the eager way
+             */
+            case 'relations':
+                $this->relations((array)$configuration_value);
                 break;
         }
 
@@ -455,7 +467,11 @@ class Listing implements Jsonable
         // Get elements and load relations if necessary
         $elements = $this->get();
         if (count($relations = $this->getRelations()) != 0) {
-            $elements->load($relations);
+            if (method_exists($elements, 'loadRelations')) {
+                $elements->loadRelations($relations);
+            } else {
+                $elements->load($relations);
+            }
         }
 
         // For each elements we keep the correct data

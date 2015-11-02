@@ -133,6 +133,19 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
         return $return;
     }
 
+    protected function relations($values, $prepend = null)
+    {
+        $values = (!is_array($values) ? [$values] : $values);
+
+        if (!is_null($prepend)) {
+            foreach ($values as $key => $value) {
+                $values[$key] = $prepend . '.' . $value;
+            }
+        }
+
+        return $values;
+    }
+
     /**
      * Add a new object for a morphTo relation
      *
@@ -153,16 +166,34 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      * @param $object_name
      * @return mixed
      */
-    static function object($object_name)
+    static function object($object_name = null)
+    {
+        $path = self::classPath($object_name);
+
+        return class_exists($path) ? new $path() : null;
+    }
+
+    /**
+     * Return the ClassPath for an object (or the current one)
+     *
+     * @param null $object_name
+     * @return string
+     */
+    static function classPath($object_name = null)
     {
         $path_class_reference = static::class;
         if (($pos = strrpos($path_class_reference, '\\')) !== false) {
             $path_class_reference = substr($path_class_reference, 0, $pos);
         }
+        $path_class_reference .= '\\';
 
-        $path = $path_class_reference . '\\' . ucfirst($object_name);
+        if (!is_null($object_name)) {
+            $path_class_reference .= ucfirst($object_name);
+        } else {
+            $path_class_reference .= get_basename_class(static::class);
+        }
 
-        return new $path();
+        return $path_class_reference;
     }
 
     /**

@@ -3,33 +3,59 @@
 /**
  * Return all the CSS classes to apply in one string
  *
- * @param $value
- * @param int $grid_size
+ * @param null $value
+ * @param string $for
  * @return string
  */
-function    css_grid($value, $grid_size = 12)
+function    css_grid($value = null, $for = 'materialize')
 {
-    $classes = ['col'];
+    $grid = 12;
+    $value = (!is_null($value) ? $value : 'full');
     $defined = ['full' => 1, 'half' => 2, 'third' => 3, 'fourth' => 4];
 
-    $current_value = 'full';
-    foreach (['phone' => ['s%', 'small'], 'tablet' => ['m%', 'medium'], 'desktop' => ['l%', 'large'], 'desktop-wide' => ['xl%', 'xlarge']] as $device => $class_format) {
+    $classes = [];
+    switch ($for) {
+        case 'materialize':
+            $classes[] = 'col';
+            $configuration = [
+                'phone'        => ['s%', 'hide-on-small-only'],
+                'tablet'       => ['m%', 'hide-on-medium-only'],
+                'desktop'      => ['l%', 'hide-on-large-only'],
+                'desktop-wide' => ['xl%', 'hide-on-xlarge-only']
+            ];
+            break;
+    }
 
-        // Retrieve the correct value as a parameter
-        if (is_int($value) || is_string($value)) {
-            $current_value = $value;
-        } else {
-            if (is_array($value) && isset($value[$device])) {
+    if (!isset($configuration)) {
+        // We don't know what to do so we return the input given for now
+        $classes = array_merge($classes, (array)$value);
+    } else {
+        // We have a specific configuration to apply to the value(s)
+        $current_value = 'full';
+
+        foreach (['phone', 'tablet', 'desktop', 'desktop-wide'] as $device) {
+
+            // Collect the value for $device
+            if (is_int($value) || is_string($value)) {
+                $current_value = $value;
+            } elseif (is_array($value) && isset($value[$device])) {
                 $current_value = $value[$device];
             }
-        }
 
-        // Add the css class to hide or with the correct width
-        if ($current_value === false) {
-            $classes[] = 'hide-on-' . $class_format[1] . '-only';
-        } else {
-            $current_value = isset($defined[$current_value]) ? ($grid_size / $defined[$current_value]) : $current_value;
-            $classes[] = str_replace('%', $current_value, $class_format[0]);
+            // Match the value to the configuration used
+            if (isset($configuration[$device])) {
+                $configuration_for_device = (array)$configuration[$device];
+
+
+                // We decided to hide it
+                if ($current_value === false) {
+                    $classes[] = isset($configuration_for_device[1]) ? $configuration_for_device[1] : null;
+                } // or We defined a width for it
+                else {
+                    $current_value = isset($defined[$current_value]) ? ($grid / $defined[$current_value]) : $current_value;
+                    $classes[] = str_replace('%', $current_value, $configuration_for_device[0]);
+                }
+            }
         }
     }
 

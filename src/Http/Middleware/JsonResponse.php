@@ -1,6 +1,6 @@
 <?php
 
-namespace Poof\Http\Middleware;
+namespace Jchedev\Http\Middleware;
 
 use Closure;
 use Illuminate\Support\Facades\Config;

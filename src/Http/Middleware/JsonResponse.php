@@ -42,7 +42,7 @@ class JsonResponse
             $response = $this->generateInvalidResponse(\Illuminate\Http\Response::HTTP_INTERNAL_SERVER_ERROR, $message);
         }
 
-        return (is_a($response, JsonResponse::class) ? $response : Response::json($response->getOriginalContent(), $response->getStatusCode()));
+        return (is_a($response, \Illuminate\Http\JsonResponse::class) ? $response : Response::json($response->getOriginalContent(), $response->getStatusCode()));
     }
 
     /**

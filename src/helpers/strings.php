@@ -29,6 +29,25 @@ function    boolean_to_string($value, $true = 'true', $false = 'false')
 }
 
 /**
+ * Transform an empty string/array into NULL
+ *
+ * @param $value
+ * @return array|null
+ */
+function    null_if_empty($value)
+{
+    if (is_array($value)) {
+        foreach ($value as $key => $line) {
+            $value[$key] = null_if_empty($line);
+        }
+
+        return $value;
+    }
+
+    return !empty($value) ? $value : null;
+}
+
+/**
  * Convert a string of duration into a value of $convert_in (minute, second, etc...)
  *
  * @param $string

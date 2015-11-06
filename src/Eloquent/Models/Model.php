@@ -90,7 +90,8 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
             switch (get_class($relation)) {
 
                 case BelongsToMany::class:
-                    $return = $this->addBelongsToManyRelationObject($relation, collect(!is_array($object) ? [$object] : $object));
+                    $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
+                    $return = $this->addBelongsToManyRelationObject($relation, $objects);
                     break;
 
                 case MorphTo::class:

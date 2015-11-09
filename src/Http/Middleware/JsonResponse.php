@@ -30,7 +30,7 @@ class JsonResponse
 
             // If the response returned is not a valid one (not 200->300), we convert it
             if ($response->isSuccessful() === false) {
-                $data = method_exists($response, 'getData') ? $response->getData(true) : null;
+                $data = method_exists($response, 'getData') ? (array)$response->getData(true) : null;
                 $response = $this->generateInvalidResponse($response->getStatusCode(), null, $data);
             }
         }

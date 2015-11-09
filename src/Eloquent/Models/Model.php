@@ -23,9 +23,8 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
          * Proxy method for $this->relation_name which return the query results of a relation. Can define first parameter as true, to always return an object even if NULL
          */
         if (preg_match('/^associated(.*)$/', $method, $method_info) == 1) {
-            $relation_name = lcfirst($method_info[1]);
             $load_empty_object = array_get($parameters, 0, false);
-            if (($found = $this->retrieveRelationObject($relation_name, $load_empty_object)) !== false) {
+            if (($found = $this->retrieveRelationObject($method_info[1], $load_empty_object)) !== false) {
                 return $found;
             }
         } else {
@@ -54,6 +53,22 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Implements the concept of load on the model itself (why only collection??)
+     *
+     * @param array|string $relations
+     * @return $this
+     */
+    public function load($relations)
+    {
+        $relations = (array)$relations;
+        foreach ($relations as $relation) {
+            $this->retrieveRelationObject($relation);
+        }
+
+        return $this;
+    }
+
+    /**
      * Try to retrieve an object for a relation
      *
      * @param $relation_name
@@ -62,6 +77,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      */
     private function    retrieveRelationObject($relation_name, $return_empty_object = false)
     {
+        $relation_name = lcfirst($relation_name);
         if (method_exists($this, $relation_name) === false) {
             return false;
         }
@@ -134,6 +150,13 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
         return $return;
     }
 
+    /**
+     * Return the correct relations based on an array of values
+     *
+     * @param $values
+     * @param null $prepend
+     * @return array
+     */
     protected function relations($values, $prepend = null)
     {
         $values = (!is_array($values) ? [$values] : $values);

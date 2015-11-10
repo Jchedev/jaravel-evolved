@@ -1,11 +1,12 @@
 <?php
 
-namespace Jchedev\Classes\Listing;
+namespace Jchedev\Classes\Listings;
 
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Jchedev\Classes\Transformers\Transformer;
 
 class Listing implements Jsonable
 {
@@ -25,6 +26,11 @@ class Listing implements Jsonable
      * @var \Illuminate\Database\Eloquent\Collection Collection of elements loaded
      */
     private $_collection;
+
+    /**
+     * @var \Closure Callback applied to the collection once retrieved
+     */
+    private $_on_collection;
 
     /**
      * @var array Collect parameters applied to the builder during the life of the listing
@@ -141,6 +147,13 @@ class Listing implements Jsonable
              */
             case 'relations':
                 $this->relations((array)$configuration_value);
+                break;
+
+            /*
+             * Define the onCollection method from the beginning
+             */
+            case 'onCollection':
+                $this->onCollection($configuration_value);
                 break;
         }
 
@@ -368,8 +381,16 @@ class Listing implements Jsonable
      * @param \Closure|null $function
      * @return $this
      */
-    public function    fieldsReturned(\Closure $function = null)
+    public function    fieldsReturned($function = null)
     {
+        if (is_a($function, Transformer::class)) {
+            $function = $function->getClosure();
+        }
+
+        if (is_callable($function) === false) {
+            $this->invalidArgumentException('Input needs to be a Closure or a Transformer object', $function);
+        }
+
         $this->_fields_returned = $function;
 
         return $this;
@@ -383,6 +404,33 @@ class Listing implements Jsonable
     public function getFieldsReturned()
     {
         return $this->_fields_returned;
+    }
+
+    /*
+    * ------> onCollection : Closure applied on the collection  <-------
+    */
+
+    /**
+     * Define the closure (or null) that will be applied to the collection
+     *
+     * @param \Closure|null $closure
+     * @return $this
+     */
+    public function onCollection(\Closure $closure = null)
+    {
+        $this->_on_collection = $closure;
+
+        return $this;
+    }
+
+    /**
+     * Return the closure to apply
+     *
+     * @return \Closure
+     */
+    public function getOnCollection()
+    {
+        return $this->_on_collection;
     }
 
     /*
@@ -435,6 +483,9 @@ class Listing implements Jsonable
     {
         if (is_null($this->_collection)) {
             $this->_collection = $this->getBuilder()->get();
+            if (!is_null($closure = $this->getOnCollection())) {
+                $closure($this->_collection);
+            }
         }
 
         return $this->_collection;
@@ -466,13 +517,6 @@ class Listing implements Jsonable
 
         // Get elements and load relations if necessary
         $elements = $this->get();
-        if (count($relations = $this->getRelations()) != 0) {
-            if (method_exists($elements, 'loadRelations')) {
-                $elements->loadRelations($relations);
-            } else {
-                $elements->load($relations);
-            }
-        }
 
         // For each elements we keep the correct data
         foreach ($elements as $element) {
@@ -606,6 +650,11 @@ class Listing implements Jsonable
         $this->applyOrderBy($builder);
         $this->applyLimit($builder);
         $this->applyOffset($builder);
+
+        $relations = $this->getRelations();
+        if (count($relations) != 0) {
+            $builder->with($relations);
+        }
 
         return $builder;
     }

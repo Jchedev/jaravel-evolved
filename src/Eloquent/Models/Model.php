@@ -32,9 +32,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
              * Proxy method to link an object through a relation. The action will be selected based on the type of relation
              */
             if (preg_match('/^addAssociated(.*)$/', $method, $method_info) == 1 && !is_null($object = array_get($parameters, 0))) {
-                $relation_name = lcfirst($method_info[1]);
-
-                return $this->addRelationObject($relation_name, $object);
+                return $this->addRelationObject($method_info[1], $object);
             }
         }
 
@@ -82,7 +80,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
             return false;
         }
 
-        $object_in_relation = $this->$relation_name;
+        $object_in_relation = ($this->relationLoaded($relation_name) ? $this->getRelation($relation_name) : $this->$relation_name);
         if (is_null($object_in_relation) && $return_empty_object === true) {
             $object_in_relation = self::object($relation_name);
         }
@@ -100,6 +98,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     private function    addRelationObject($relation_name, $object)
     {
         $return = null;
+        $relation_name = lcfirst($relation_name);
 
         if (method_exists($this, $relation_name) !== false) {
             $relation = $this->$relation_name();

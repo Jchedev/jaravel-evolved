@@ -33,6 +33,11 @@ class Listing implements Jsonable
     private $_on_collection;
 
     /**
+     * @var \Closure Callback applied to the array of data returned
+     */
+    private $_on_item;
+
+    /**
      * @var array Collect parameters applied to the builder during the life of the listing
      */
     private $_builder_parameters = [];
@@ -130,6 +135,9 @@ class Listing implements Jsonable
                 }
                 break;
 
+            /*
+             * Define the orderBy used in the query
+             */
             case 'order':
                 $this->sortField($configuration_value);
                 $this->orderBy($configuration_value);
@@ -143,17 +151,17 @@ class Listing implements Jsonable
                 break;
 
             /*
-             * Automatically add some relations to load in the eager way
-             */
-            case 'relations':
-                $this->relations((array)$configuration_value);
-                break;
-
-            /*
              * Define the onCollection method from the beginning
              */
             case 'onCollection':
                 $this->onCollection($configuration_value);
+                break;
+
+            /*
+             * Define the onReturn method from the beginning
+             */
+            case 'onItem':
+                $this->onItem($configuration_value);
                 break;
         }
 
@@ -173,10 +181,12 @@ class Listing implements Jsonable
      */
     public function sortField($field, $as = null)
     {
-        if (is_null($as)) {
-            $this->_sort_fields[] = $field;
-        } else {
-            $this->_sort_fields[$as] = $field;
+        if (is_string($field)) {
+            if (is_null($as)) {
+                $this->_sort_fields[] = $field;
+            } else {
+                $this->_sort_fields[$as] = $field;
+            }
         }
 
         return $this;
@@ -215,7 +225,7 @@ class Listing implements Jsonable
     {
         $allowed_columns = array_keys($this->getSortFields());
 
-        if (!in_array($field, $allowed_columns)) {
+        if (!in_array($field, $allowed_columns) && !is_a($field, \Illuminate\Database\Query\Expression::class)) {
             $this->invalidArgumentException('Invalid order value', $field, $allowed_columns);
         }
 
@@ -428,36 +438,36 @@ class Listing implements Jsonable
      *
      * @return \Closure
      */
-    public function getOnCollection()
+    public function getOnCollectionClosure()
     {
         return $this->_on_collection;
     }
 
     /*
-     * ------> Fields returned : Which fields  <-------
+     * ------> onReturn : Closure applied on the collection  <-------
      */
 
     /**
-     * Set the list of fields to return in toArray
+     * Define the closure (or null) that will be applied to the collection
      *
-     * @param array $relations
+     * @param \Closure|null $closure
      * @return $this
      */
-    public function relations(Array $relations)
+    public function onItem(\Closure $closure = null)
     {
-        $this->_relations = array_unique(array_merge($this->_relations, $relations));
+        $this->_on_item = $closure;
 
         return $this;
     }
 
     /**
-     * Return the list of relations that will be loaded
+     * Return the closure to apply
      *
-     * @return array
+     * @return \Closure
      */
-    public function getRelations()
+    public function getOnItemClosure()
     {
-        return $this->_relations;
+        return $this->_on_item;
     }
 
     /*
@@ -483,7 +493,7 @@ class Listing implements Jsonable
     {
         if (is_null($this->_collection)) {
             $this->_collection = $this->getBuilder()->get();
-            if (!is_null($closure = $this->getOnCollection())) {
+            if (!is_null($closure = $this->getOnCollectionClosure())) {
                 $closure($this->_collection);
             }
         }
@@ -520,8 +530,13 @@ class Listing implements Jsonable
 
         // For each elements we keep the correct data
         foreach ($elements as $element) {
-            $return[] = $this->getDataElement($element);
-            unset($element);
+            $element_data = $this->getDataItem($element);
+            if (is_callable($closure = $this->getOnItemClosure())) {
+                $element_data = $closure($element_data, $element);
+            }
+            $return[] = $element_data;
+
+            unset($element, $element_data);
         }
         unset ($elements);
 
@@ -536,9 +551,9 @@ class Listing implements Jsonable
     public function toArray()
     {
         return [
-            'results'   => $this->getData(),
-            'total'     => $this->count(),
-            'completed' => $this->isAtTheEnd()
+            'collection' => $this->getData(),
+            'total'      => $this->count(),
+            'end'        => $this->isAtTheEnd()
         ];
     }
 
@@ -651,11 +666,6 @@ class Listing implements Jsonable
         $this->applyLimit($builder);
         $this->applyOffset($builder);
 
-        $relations = $this->getRelations();
-        if (count($relations) != 0) {
-            $builder->with($relations);
-        }
-
         return $builder;
     }
 
@@ -677,7 +687,7 @@ class Listing implements Jsonable
      * @param Model $element
      * @return array
      */
-    private function    getDataElement(Model $element)
+    private function    getDataItem(Model $element)
     {
         if (is_null($this->_fields_returned)) {
             return $element->toArray();

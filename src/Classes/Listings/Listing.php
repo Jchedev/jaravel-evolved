@@ -126,42 +126,37 @@ class Listing implements Jsonable
     {
         switch ($configuration_key) {
 
-            /*
-             * Add configuration about which sort fields are accepted
-             */
+            // Add configuration about which sort fields are accepted
             case 'sort':
                 foreach ((array)$configuration_value as $key => $value) {
                     $this->sortField($value, $key);
                 }
                 break;
 
-            /*
-             * Define the orderBy used in the query
-             */
+            // Define the orderBy used in the query
             case 'order':
                 $this->sortField($configuration_value);
                 $this->orderBy($configuration_value);
                 break;
 
-            /*
-             * Add configuration about which fields are returned for the call
-             */
+            // Add configuration about which fields are returned for the call
             case 'fields':
                 $this->fieldsReturned($configuration_value);
                 break;
 
-            /*
-             * Define the onCollection method from the beginning
-             */
+            // Define the onCollection method from the beginning
             case 'onCollection':
                 $this->onCollection($configuration_value);
                 break;
 
-            /*
-             * Define the onReturn method from the beginning
-             */
+            // Define the onReturn method from the beginning
             case 'onItem':
                 $this->onItem($configuration_value);
+                break;
+
+            // Overwrite the number of elements to return
+            case 'limit':
+                $this->limit($configuration_value);
                 break;
         }
 

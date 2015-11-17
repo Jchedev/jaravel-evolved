@@ -20,7 +20,8 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     public function __call($method, $parameters)
     {
         /*
-         * Proxy method for $this->relation_name which return the query results of a relation. Can define first parameter as true, to always return an object even if NULL
+         * Proxy method for $this->relation_name which return the query results of a relation.
+         * Can define first parameter as true, to always return an object even if NULL
          */
         if (preg_match('/^associated(.*)$/', $method, $method_info) == 1) {
             $load_empty_object = array_get($parameters, 0, false);
@@ -29,7 +30,8 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
             }
         } else {
             /*
-             * Proxy method to link an object through a relation. The action will be selected based on the type of relation
+             * Proxy method to link an object through a relation.
+             * The action will be selected based on the type of relation
              */
             if (preg_match('/^addAssociated(.*)$/', $method, $method_info) == 1 && !is_null($object = array_get($parameters, 0))) {
                 return $this->addRelationObject($method_info[1], $object);

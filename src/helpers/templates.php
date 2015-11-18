@@ -18,10 +18,10 @@ function    css_grid($value = null, $for = 'materialize')
         case 'materialize':
             $classes[] = 'col';
             $configuration = [
-                'phone'        => ['s%', 'hide-on-small-only'],
-                'tablet'       => ['m%', 'hide-on-medium-only'],
-                'desktop'      => ['l%', 'hide-on-large-only'],
-                'desktop-wide' => ['xl%', 'hide-on-xlarge-only']
+                'phone'        => ['s%', 'offset-s%', 'hide-on-small-only'],
+                'tablet'       => ['m%', 'offset-m%', 'hide-on-medium-only'],
+                'desktop'      => ['l%', 'offset-l%', 'hide-on-large-only'],
+                'desktop-wide' => ['xl%', 'offset-xl%', 'hide-on-xlarge-only']
             ];
             break;
     }
@@ -46,14 +46,19 @@ function    css_grid($value = null, $for = 'materialize')
             if (isset($configuration[$device])) {
                 $configuration_for_device = (array)$configuration[$device];
 
-
                 // We decided to hide it
                 if ($current_value === false) {
-                    $classes[] = isset($configuration_for_device[1]) ? $configuration_for_device[1] : null;
-                } // or We defined a width for it
-                else {
+                    $classes[] = isset($configuration_for_device[2]) ? $configuration_for_device[2] : null;
+                } else {
+                    // or We defined a width for it
                     $current_value = isset($defined[$current_value]) ? ($grid / $defined[$current_value]) : $current_value;
                     $classes[] = str_replace('%', $current_value, $configuration_for_device[0]);
+                }
+
+                // Grid system
+                if (is_array($value) && isset($value[$device . '-offset']) && isset($configuration_for_device[1])) {
+                    $offset_value = isset($defined[$value[$device . '-offset']]) ? ($grid / $defined[$value[$device . '-offset']]) : $value[$device . '-offset'];
+                    $classes[] = str_replace('%', $offset_value, $configuration_for_device[1]);
                 }
             }
         }

@@ -2,7 +2,12 @@
 
 namespace Jchedev\Eloquent\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
@@ -25,7 +30,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
          */
         if (preg_match('/^associated(.*)$/', $method, $method_info) == 1) {
             $load_empty_object = array_get($parameters, 0, false);
-            if (($found = $this->retrieveRelationObject($method_info[1], $load_empty_object)) !== false) {
+            if (($found = $this->getRelatedObject($method_info[1], $load_empty_object)) !== false) {
                 return $found;
             }
         } else {
@@ -34,7 +39,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
              * The action will be selected based on the type of relation
              */
             if (preg_match('/^addAssociated(.*)$/', $method, $method_info) == 1 && !is_null($object = array_get($parameters, 0))) {
-                return $this->addRelationObject($method_info[1], $object);
+                return $this->setRelatedObject($method_info[1], $object);
             }
         }
 
@@ -62,10 +67,39 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     {
         $relations = (array)$relations;
         foreach ($relations as $relation) {
-            $this->retrieveRelationObject($relation);
+            $this->getRelatedObject($relation);
         }
 
         return $this;
+    }
+
+    /**
+     * Scope to link a relation directly
+     *
+     * @param $query
+     * @param $relation_name
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return bool
+     */
+    public function     scopeWhereRelation($query, $relation_name, \Illuminate\Database\Eloquent\Model $model)
+    {
+        $relation_name = lcfirst($relation_name);
+        if (method_exists($this, $relation_name) === false) {
+            return false;
+        }
+
+        $relation = $this->$relation_name();
+        switch (get_class($relation)) {
+
+            case BelongsTo::class:
+                $query->where($relation->getForeignKey(), '=', $model->id);
+                break;
+
+            case MorphTo::class:
+                $query->where($relation->getMorphType(), '=', get_class($model));
+                $query->where($relation->getForeignKey(), '=', $model->id);
+                break;
+        }
     }
 
     /**
@@ -75,7 +109,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      * @param bool|false $return_empty_object
      * @return bool|mixed
      */
-    private function    retrieveRelationObject($relation_name, $return_empty_object = false)
+    private function    getRelatedObject($relation_name, $return_empty_object = false)
     {
         $relation_name = lcfirst($relation_name);
         if (method_exists($this, $relation_name) === false) {
@@ -97,29 +131,48 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      * @param $object
      * @return null
      */
-    private function    addRelationObject($relation_name, $object)
+    private function    setRelatedObject($relation_name, $object)
     {
-        $return = null;
         $relation_name = lcfirst($relation_name);
+        if (method_exists($this, $relation_name) === false) {
+            return false;
+        }
 
-        if (method_exists($this, $relation_name) !== false) {
-            $relation = $this->$relation_name();
-            switch (get_class($relation)) {
+        $relation = $this->$relation_name();
+        switch (get_class($relation)) {
 
-                case BelongsToMany::class:
-                    $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
-                    $return = $this->addBelongsToManyRelationObject($relation, $objects);
-                    break;
+            case BelongsToMany::class:
+                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
+                $return = $this->addBelongsToManyRelationObject($relation, $objects);
+                break;
 
-                case MorphTo::class:
-                    $return = $this->addMorphToRelationObject($relation, $object);
-                    break;
+            case BelongsTo::class:
+                // todo
+                break;
 
-                default:
-                    // todo : we need to implement the other type of relations
-                    exit;
-                    break;
-            }
+            case MorphOne::class:
+                // todo
+                break;
+
+            case MorphMany::class:
+                // todo
+                break;
+
+            case MorphTo::class:
+                $return = $this->addMorphToRelationObject($relation, $object);
+                break;
+
+            case HasOne::class:
+                // todo
+                break;
+
+            case HasMany::class;
+                // todo
+                break;
+
+            default:
+                $return = null;
+                break;
         }
 
         if (!is_null($return)) {
@@ -152,6 +205,20 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Add a new object for a morphTo relation
+     *
+     * @param MorphTo $relation
+     * @param \Illuminate\Database\Eloquent\Model $object
+     * @return bool
+     */
+    private function    addMorphToRelationObject(MorphTo $relation, \Illuminate\Database\Eloquent\Model $object)
+    {
+        $relation->associate($object);
+
+        return $this->save();
+    }
+
+    /**
      * Return the correct relations based on an array of values
      *
      * @param $values
@@ -169,20 +236,6 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
         }
 
         return $values;
-    }
-
-    /**
-     * Add a new object for a morphTo relation
-     *
-     * @param MorphTo $relation
-     * @param \Illuminate\Database\Eloquent\Model $object
-     * @return bool
-     */
-    private function    addMorphToRelationObject(MorphTo $relation, \Illuminate\Database\Eloquent\Model $object)
-    {
-        $relation->associate($object);
-
-        return $this->save();
     }
 
     /**

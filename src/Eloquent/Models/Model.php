@@ -103,6 +103,20 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Create the orWhere relation part
+     *
+     * @param $query
+     * @param $relation_name
+     * @param \Illuminate\Database\Eloquent\Model $model
+     */
+    public function scopeOrWhereRelation($query, $relation_name, \Illuminate\Database\Eloquent\Model $model)
+    {
+        $query->orWhere(function ($join) use ($relation_name, $model) {
+            $this->scopeWhereRelation($join, $relation_name, $model);
+        });
+    }
+    
+    /**
      * Try to retrieve an object for a relation
      *
      * @param $relation_name

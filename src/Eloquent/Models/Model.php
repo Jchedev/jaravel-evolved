@@ -158,7 +158,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      * @param null $prepend
      * @return array
      */
-    protected function relations($values, $prepend = null)
+    static function relations($values, $prepend = null)
     {
         $values = (!is_array($values) ? [$values] : $values);
 

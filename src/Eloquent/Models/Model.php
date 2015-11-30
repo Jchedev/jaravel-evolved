@@ -39,7 +39,9 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
              * The action will be selected based on the type of relation
              */
             if (preg_match('/^addAssociated(.*)$/', $method, $method_info) == 1 && !is_null($object = array_get($parameters, 0))) {
-                return $this->setRelatedObject($method_info[1], $object);
+                $execute_save_too = array_get($parameters, 0, true);
+
+                return $this->setRelatedObject($method_info[1], $object, $execute_save_too);
             }
         }
 
@@ -115,7 +117,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
             $this->scopeWhereRelation($join, $relation_name, $model);
         });
     }
-    
+
     /**
      * Try to retrieve an object for a relation
      *
@@ -143,9 +145,10 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      *
      * @param $relation_name
      * @param $object
-     * @return null
+     * @param bool|true $execute_save
+     * @return array|bool|null
      */
-    private function    setRelatedObject($relation_name, $object)
+    private function    setRelatedObject($relation_name, $object, $execute_save = true)
     {
         $relation_name = lcfirst($relation_name);
         if (method_exists($this, $relation_name) === false) {
@@ -173,7 +176,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
                 break;
 
             case MorphTo::class:
-                $return = $this->addMorphToRelationObject($relation, $object);
+                $return = $this->addMorphToRelationObject($relation, $object, $execute_save);
                 break;
 
             case HasOne::class:
@@ -187,10 +190,6 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
             default:
                 $return = null;
                 break;
-        }
-
-        if (!is_null($return)) {
-            // todo : if we want to fire an event, this is from here!
         }
 
         return $return;
@@ -223,13 +222,14 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      *
      * @param MorphTo $relation
      * @param \Illuminate\Database\Eloquent\Model $object
-     * @return bool
+     * @param bool|true $save
+     * @return bool|null
      */
-    private function    addMorphToRelationObject(MorphTo $relation, \Illuminate\Database\Eloquent\Model $object)
+    private function    addMorphToRelationObject(MorphTo $relation, \Illuminate\Database\Eloquent\Model $object, $save = true)
     {
         $relation->associate($object);
 
-        return $this->save();
+        return ($save === true) ? $this->save() : null;
     }
 
     /**

@@ -547,8 +547,7 @@ class Listing implements Jsonable
     {
         return [
             'collection' => $this->getData(),
-            'total'      => $this->count(),
-            'end'        => $this->isAtTheEnd()
+            'total'      => $this->count()
         ];
     }
 

@@ -2,7 +2,6 @@
 
 namespace Jchedev\Eloquent\Models;
 
-use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Expression;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Jchedev\Eloquent\Builders\Builder;
 
@@ -185,7 +185,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      */
     protected function  relationLink(Relation $relation, $link_to)
     {
-        if ($link_to instanceof Arrayable) {
+        if (is_a($link_to, Collection::class) || is_a($link_to, LengthAwarePaginator::class)) {
             $model_id = $link_to->modelKeys();
             $model_class = get_class($link_to->first());
         } else {
@@ -228,8 +228,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
         foreach ($relation_links as $key => $value) {
             if (is_array($value)) {
                 $query->whereIn($key, $value);
-            }
-            else {
+            } else {
                 $query->where($key, '=', $value);
             }
         }

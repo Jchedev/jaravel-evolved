@@ -2,6 +2,7 @@
 
 namespace Jchedev\Eloquent\Models;
 
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,7 +30,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
          */
         if (preg_match('/^associated(.*)$/', $method, $method_info) == 1) {
 
-            return $this->getRelatedObject($method_info[1], array_get($parameters, 0, false));
+            return $this->getRelatedObject(lcfirst($method_info[1]), array_get($parameters, 0, false));
         }
 
         /*
@@ -37,7 +38,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
          * The action will be selected based on the type of relation
          */
         if (preg_match('/^addAssociated(.*)$/', $method, $method_info) == 1) {
-            return $this->setRelatedObject($method_info[1], array_get($parameters, 0));
+            return $this->setRelatedObject(lcfirst($method_info[1]), array_get($parameters, 0));
         }
 
         /*
@@ -45,7 +46,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
          * The action will be selected based on the type of relation
          */
         if (preg_match('/^compareAssociated(.*)$/', $method, $method_info) == 1) {
-            return $this->compareRelatedObject($method_info[1], array_get($parameters, 0));
+            return $this->compareRelatedObject(lcfirst($method_info[1]), array_get($parameters, 0));
         }
 
         return parent::__call($method, $parameters);
@@ -150,6 +151,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     protected function  setRelatedObject($relation_name, $object)
     {
         $relation = $this->getRelationObject($relation_name);
+
         switch (get_class($relation)) {
 
             case HasMany::class:
@@ -178,25 +180,31 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      * Return the links between a relation and a model (used for the comparison)
      *
      * @param Relation $relation
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param $link_to
      * @return array
      */
-    protected function  relationLink(Relation $relation, \Illuminate\Database\Eloquent\Model $model)
+    protected function  relationLink(Relation $relation, $link_to)
     {
-        // todo: find a way to make the many-to-many work too
+        if ($link_to instanceof Arrayable) {
+            $model_id = $link_to->modelKeys();
+            $model_class = get_class($link_to->first());
+        } else {
+            $model_id = $link_to->id;
+            $model_class = get_class($link_to);
+        }
 
         switch (get_class($relation)) {
 
             case BelongsTo::class:
                 return [
-                    $relation->getForeignKey() => $model->id
+                    $relation->getForeignKey() => $model_id
                 ];
                 break;
 
             case MorphTo::class:
                 return [
-                    $relation->getMorphType()  => get_class($model),
-                    $relation->getForeignKey() => $model->id
+                    $relation->getMorphType()  => $model_class,
+                    $relation->getForeignKey() => $model_id
                 ];
                 break;
         }
@@ -207,10 +215,10 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      *
      * @param $query
      * @param $relation_name
-     * @param \Illuminate\Database\Eloquent\Model $object
+     * @param $object
      * @throws \Exception
      */
-    public function     scopeWhereRelation($query, $relation_name, \Illuminate\Database\Eloquent\Model $object)
+    public function     scopeWhereRelation($query, $relation_name, $object)
     {
         $relation_links = $this->relationLink($this->$relation_name(), $object);
         if (is_null($relation_links)) {
@@ -218,7 +226,12 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
         }
 
         foreach ($relation_links as $key => $value) {
-            $query->where($key, '=', $value);
+            if (is_array($value)) {
+                $query->whereIn($key, $value);
+            }
+            else {
+                $query->where($key, '=', $value);
+            }
         }
     }
 

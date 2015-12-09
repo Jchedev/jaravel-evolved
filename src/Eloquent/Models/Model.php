@@ -2,18 +2,18 @@
 
 namespace Jchedev\Eloquent\Models;
 
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\Query\Expression;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Jchedev\Eloquent\Builders\Builder;
 
-abstract class Model extends \Illuminate\Database\Eloquent\Model
+abstract class Model extends EloquentModel
 {
     /**
      * Magic method allowing the use of associatedXXXX() to access relation object
@@ -24,29 +24,32 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      */
     public function __call($method, $parameters)
     {
-        /*
-         * Proxy method for $this->relation_name which return the query results of a relation.
-         * Can define first parameter as true, to always return an object even if NULL
-         */
-        if (preg_match('/^associated(.*)$/', $method, $method_info) == 1) {
+        $proxy_methods = [
+            /*
+             * Proxy method for $this->relation_name which return the query results of a relation.
+             * Can define first parameter as true, to always return an object even if NULL
+             */
+            '/^associated(.*)$/'        => 'getAssociatedObject',
 
-            return $this->getRelatedObject(lcfirst($method_info[1]), array_get($parameters, 0, false));
-        }
+            /*
+             * Proxy method to link an object through a relation.
+             * The action will be selected based on the type of relation
+             */
+            '/^addAssociated(.*)$/'     => 'addAssociatedObject',
 
-        /*
-         * Proxy method to link an object through a relation.
-         * The action will be selected based on the type of relation
-         */
-        if (preg_match('/^addAssociated(.*)$/', $method, $method_info) == 1) {
-            return $this->setRelatedObject(lcfirst($method_info[1]), array_get($parameters, 0));
-        }
+            /*
+             * Proxy method to link an object through a relation.
+             * The action will be selected based on the type of relation
+             */
+            '/^compareAssociated(.*)$/' => 'compareAssociatedObject'
+        ];
 
-        /*
-         * Proxy method to link an object through a relation.
-         * The action will be selected based on the type of relation
-         */
-        if (preg_match('/^compareAssociated(.*)$/', $method, $method_info) == 1) {
-            return $this->compareRelatedObject(lcfirst($method_info[1]), array_get($parameters, 0));
+        foreach ($proxy_methods as $regex => $method_name) {
+            if (preg_match($regex, $method, $method_parameters)) {
+                $parameters = array_merge(array_slice($method_parameters, 1), $parameters);
+
+                return call_user_func_array([$this, $method_name], $parameters);
+            }
         }
 
         return parent::__call($method, $parameters);
@@ -102,36 +105,36 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      *
      * @param $relation_name
      * @param bool|false $return_empty_object
-     * @return bool|mixed
+     * @return mixed
      */
-    protected function  getRelatedObject($relation_name, $return_empty_object = false)
+    protected function  getAssociatedObject($relation_name, $return_empty_object = false)
     {
-        $object_from_relation = ($this->relationLoaded($relation_name) ? $this->getRelation($relation_name) : $this->$relation_name);
+        $result_from_relation = $this->getRelationValue(lcfirst($relation_name));
 
-        if (is_null($object_from_relation) && $return_empty_object !== false) {
-            $object_from_relation = self::object($object_from_relation);
+        if (is_null($result_from_relation) && $return_empty_object === true) {
+            if (!is_null($relation = $this->getRelationObject($relation_name))) {
+                $result_from_relation = $relation->getRelated();
+            }
         }
 
-        return $object_from_relation;
+        return $result_from_relation;
     }
 
     /**
      * Compare an object with the return of a relation
      *
      * @param $relation_name
-     * @param \Illuminate\Database\Eloquent\Model $object
+     * @param $object
      * @return bool
      * @throws \Exception
      */
-    protected function  compareRelatedObject($relation_name, \Illuminate\Database\Eloquent\Model $object)
+    protected function  compareAssociatedObject($relation_name, $object)
     {
-        $relation = $this->getRelationObject($relation_name);
-
-        $relation_links = $this->relationLink($relation, $object);
-        if (is_null($relation_links)) {
-            throw new \Exception('CompareRelatedObject doesn\'t work on ' . get_class($relation) . ' relations yet');
+        if (is_null($relation = $this->getRelationObject($relation_name))) {
+            throw new \Exception('Unknown relation ' . $relation_name);
         }
 
+        $relation_links = $this->relationLinksTo($relation, $object);
         foreach ($relation_links as $key => $value) {
             if ($this->$key != $value) {
                 return false;
@@ -147,10 +150,13 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      * @param $relation_name
      * @param $object
      * @return array
+     * @throws \Exception
      */
-    protected function  setRelatedObject($relation_name, $object)
+    protected function  addRelatedObject($relation_name, $object)
     {
-        $relation = $this->getRelationObject($relation_name);
+        if (is_null($relation = $this->getRelationObject($relation_name))) {
+            throw new \Exception('Unknown relation ' . $relation_name);
+        }
 
         switch (get_class($relation)) {
 
@@ -183,7 +189,7 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      * @param $link_to
      * @return array
      */
-    protected function  relationLink(Relation $relation, $link_to)
+    protected function  relationLinksTo(Relation $relation, $link_to)
     {
         if (is_a($link_to, Collection::class) || is_a($link_to, LengthAwarePaginator::class)) {
             $model_id = $link_to->modelKeys();
@@ -211,80 +217,19 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
-     * Scope to link a relation directly
-     *
-     * @param $query
-     * @param $relation_name
-     * @param $object
-     * @throws \Exception
-     */
-    public function     scopeWhereRelation($query, $relation_name, $object)
-    {
-        $relation_links = $this->relationLink($this->$relation_name(), $object);
-        if (is_null($relation_links)) {
-            throw new \Exception('WhereRelation doesn\'t work on ' . $relation_name . ' relations yet');
-        }
-
-        foreach ($relation_links as $key => $value) {
-            if (is_array($value)) {
-                $query->whereIn($key, $value);
-            } else {
-                $query->where($key, '=', $value);
-            }
-        }
-    }
-
-    /**
-     * Create the orWhere relation part
-     *
-     * @param $query
-     * @param $relation_name
-     * @param \Illuminate\Database\Eloquent\Model $object
-     */
-    public function     scopeOrWhereRelation($query, $relation_name, \Illuminate\Database\Eloquent\Model $object)
-    {
-        $query->orWhere(function ($join) use ($relation_name, $object) {
-            $this->scopeWhereRelation($join, $relation_name, $object);
-        });
-    }
-
-
-    /**
      * Return an object in the same namespace than the current class
      *
      * @param $object_name
      * @return mixed
      */
-    static function object($object_name = null)
+    static function object($object_name)
     {
-        $path = self::classPath($object_name);
+        $class_namespace = get_class_namespace(static::class);
+        $class_name = get_class_basename($object_name);
 
-        return class_exists($path) ? new $path() : null;
-    }
+        $class_path = $class_namespace . '\\' . ucfirst($class_name);
 
-    /**
-     * Return the ClassPath for an object (or the current one)
-     *
-     * @param null $object_name
-     * @return string
-     */
-    static function classPath($object_name = null)
-    {
-        // Retrieve the namespace part of the current class
-        $path_class_reference = static::class;
-        if (($pos = strrpos($path_class_reference, '\\')) !== false) {
-            $path_class_reference = substr($path_class_reference, 0, $pos);
-        }
-        $path_class_reference .= '\\';
-
-        // Append the namespace with the basename of the object (or the $object_name if it is a string)
-        if (!is_null($object_name)) {
-            $path_class_reference .= ucfirst($object_name);
-        } else {
-            $path_class_reference .= get_basename_class(static::class);
-        }
-
-        return $path_class_reference;
+        return class_exists($class_path) ? new $class_path() : null;
     }
 
     /**
@@ -316,10 +261,6 @@ abstract class Model extends \Illuminate\Database\Eloquent\Model
      */
     public function getTableColumn($column)
     {
-        if (is_a($column, Expression::class)) {
-            return $column;
-        }
-
-        return \DB::raw('`' . $this->getTable() . '`.' . ($column != '*' ? '`' . $column . '`' : $column));
+        return table_column($this->getTable(), $column);
     }
 }

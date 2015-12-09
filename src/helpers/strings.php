@@ -72,61 +72,34 @@ function    time_duration($string, $convert_in = 'second')
  */
 function    time_multiplier($from, $to)
 {
-    // Convert the $from value to something valid
-    $from = strtolower($from);
-    if ($from{strlen($from) - 1} == 's') {
-        $from = substr($from, 0, -1);
+    $from = str_singular(strtolower($from));
+    $to = str_singular(strtolower($to));
+
+    if ($from == $to) {
+        return 1;
     }
 
-    // Convert the $to value to something valid
-    $to = strtolower($to);
-    if ($to{strlen($to) - 1} == 's') {
-        $to = substr($to, 0, -1);
+    $multipliers = [
+        'second' => ['minute' => (1 / 60), 'hour' => (1 / 60 / 60)],
+        'minute' => ['second' => 60, 'hour' => (1 / 60)],
+        'hour'   => ['second' => 60 * 60, 'minute' => 60]
+    ];
+
+    return array_get($multipliers, $from . '.' . $to, false);
+}
+
+/**
+ * Merge a table name and a column name if possible
+ *
+ * @param $table
+ * @param $column
+ * @return mixed
+ */
+function    table_column($table, $column)
+{
+    if (is_string($column) === false || strstr($column, '.') !== false) {
+        return $column;
     }
 
-    // Try to return a specific multiplier
-    switch ($from) {
-
-        // Convert from Seconds to ...
-        case 'second':
-            switch ($to) {
-                case 'minute':
-                    return (1 / 60);
-                    break;
-
-                case 'hour':
-                    return (1 / 60 / 60);
-                    break;
-            }
-            break;
-
-        // Convert from Minutes to ...
-        case 'minute':
-            switch ($to) {
-                case 'second':
-                    return 60;
-                    break;
-
-                case 'hour':
-                    return (1 / 60);
-                    break;
-            }
-            break;
-
-
-        // Convert from Hours to ...
-        case 'hour':
-            switch ($to) {
-                case 'second':
-                    return 60 * 60;
-                    break;
-
-                case 'minute':
-                    return 60;
-                    break;
-            }
-            break;
-    }
-
-    return ($from == $to) ? 1 : false;
+    return \DB::raw('`' . $table . '`' . '.' . ($column != '*' ? '`' . $column . '`' : $column));
 }

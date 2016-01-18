@@ -41,6 +41,12 @@ abstract class Model extends EloquentModel
              * Proxy method to link an object through a relation.
              * The action will be selected based on the type of relation
              */
+            '/^removeAssociated(.*)$/'  => 'removeAssociatedObject',
+
+            /*
+             * Proxy method to link an object through a relation.
+             * The action will be selected based on the type of relation
+             */
             '/^compareAssociated(.*)$/' => 'compareAssociatedObject'
         ];
 
@@ -142,6 +148,16 @@ abstract class Model extends EloquentModel
         }
 
         return true;
+    }
+
+    protected function  removeRelatedObject($relation_name, $object)
+    {
+        if (is_null($relation = $this->getRelationObject($relation_name))) {
+            throw new \Exception('Unknown relation ' . $relation_name);
+        }
+
+        echo "yes!";
+        exit;
     }
 
     /**

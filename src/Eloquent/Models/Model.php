@@ -296,4 +296,42 @@ abstract class Model extends EloquentModel
     {
         return table_column($this->getTable(), $column);
     }
+
+    /**
+     * Scope to link a relation directly
+     *
+     * @param $query
+     * @param $relation_name
+     * @param $object
+     * @throws \Exception
+     */
+    public function     scopeWhereRelation($query, $relation_name, $object)
+    {
+        $relation_links = $this->relationLinksTo($this->$relation_name(), $object);
+        if (is_null($relation_links)) {
+            throw new \Exception('WhereRelation doesn\'t work on ' . $relation_name . ' relations yet');
+        }
+
+        foreach ($relation_links as $key => $value) {
+            if (is_array($value)) {
+                $query->whereIn($key, $value);
+            } else {
+                $query->where($key, '=', $value);
+            }
+        }
+    }
+
+    /**
+     * Create the orWhere relation part
+     *
+     * @param $query
+     * @param $relation_name
+     * @param \Illuminate\Database\Eloquent\Model $object
+     */
+    public function     scopeOrWhereRelation($query, $relation_name, \Illuminate\Database\Eloquent\Model $object)
+    {
+        $query->orWhere(function ($join) use ($relation_name, $object) {
+            $this->scopeWhereRelation($join, $relation_name, $object);
+        });
+    }
 }

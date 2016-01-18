@@ -150,25 +150,15 @@ abstract class Model extends EloquentModel
         return true;
     }
 
-    protected function  removeRelatedObject($relation_name, $object)
-    {
-        if (is_null($relation = $this->getRelationObject($relation_name))) {
-            throw new \Exception('Unknown relation ' . $relation_name);
-        }
-
-        echo "yes!";
-        exit;
-    }
-
     /**
-     * Link the object (collection or model) to the relation based on the type of relation
+     * Remove the associated elements (collection or model). Different than deleted them
      *
      * @param $relation_name
      * @param $object
      * @return array
      * @throws \Exception
      */
-    protected function  addRelatedObject($relation_name, $object)
+    protected function  removeAssociatedObject($relation_name, $object)
     {
         if (is_null($relation = $this->getRelationObject($relation_name))) {
             throw new \Exception('Unknown relation ' . $relation_name);
@@ -179,7 +169,34 @@ abstract class Model extends EloquentModel
             case HasMany::class:
             case BelongsToMany::class:
                 $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
-                $not_existing = $objects->diff($this->getRelatedObject($relation_name));
+
+                $return = (count($objects) != 0) ? $relation->detach($objects->modelKeys()) : [];
+                break;
+        }
+
+        return $return;
+    }
+
+    /**
+     * Link the object (collection or model) to the relation based on the type of relation
+     *
+     * @param $relation_name
+     * @param $object
+     * @return array
+     * @throws \Exception
+     */
+    protected function  addAssociatedObject($relation_name, $object)
+    {
+        if (is_null($relation = $this->getRelationObject($relation_name))) {
+            throw new \Exception('Unknown relation ' . $relation_name);
+        }
+
+        switch (get_class($relation)) {
+
+            case HasMany::class:
+            case BelongsToMany::class:
+                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
+                $not_existing = $objects->diff($this->getAssociatedObject($relation_name));
 
                 $return = (count($not_existing) != 0) ? $relation->saveMany($not_existing->all()) : [];
                 break;

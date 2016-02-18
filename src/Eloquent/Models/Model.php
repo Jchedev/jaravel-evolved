@@ -198,7 +198,7 @@ abstract class Model extends EloquentModel
                 $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
                 $not_existing = $objects->diff($this->getAssociatedObject($relation_name));
 
-                $return = (count($not_existing) != 0) ? $relation->saveMany($not_existing->all()) : [];
+                $return = collect((count($not_existing) != 0) ? $relation->saveMany($not_existing->all()) : []);
                 break;
 
             case HasOne::class:

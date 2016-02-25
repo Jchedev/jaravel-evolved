@@ -167,9 +167,12 @@ abstract class Model extends EloquentModel
         switch (get_class($relation)) {
 
             case HasMany::class:
+                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
+                $return = (count($objects) != 0) ? $relation->whereIn('id', $objects->modelKeys())->delete() : [];
+                break;
+
             case BelongsToMany::class:
                 $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
-
                 $return = (count($objects) != 0) ? $relation->detach($objects->modelKeys()) : [];
                 break;
         }

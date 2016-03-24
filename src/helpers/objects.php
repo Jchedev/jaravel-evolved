@@ -33,14 +33,3 @@ function get_class_namespace($object)
 
     return null;
 }
-
-/**
- * Return a clone of the object
- *
- * @param $object
- * @return mixed
- */
-function    with_clone($object)
-{
-    return with(clone($object));
-}

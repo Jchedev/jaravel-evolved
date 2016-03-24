@@ -16,6 +16,42 @@ use Jchedev\Eloquent\Builders\Builder;
 abstract class Model extends EloquentModel
 {
     /**
+     * Allow the call of getTable() in a static way
+     *
+     * @return mixed
+     */
+    static function table()
+    {
+        return with(new static)->getTable();
+    }
+
+    /**
+     * Allow a static call on the getTableColumn() method
+     *
+     * @param $column
+     * @return mixed
+     */
+    static function  tableColumn($column)
+    {
+        return with(new static)->getTableColumn($column);
+    }
+
+    /**
+     * Return the column concatenated to the table name
+     *
+     * @param $column
+     * @return string
+     */
+    public function getTableColumn($column)
+    {
+        return table_column($this->getTable(), $column);
+    }
+
+    /*
+     * ------> Laravel methods overwritten <-------
+     */
+
+    /**
      * Magic method allowing the use of associatedXXXX() to access relation object
      *
      * @param string $method
@@ -62,7 +98,7 @@ abstract class Model extends EloquentModel
     }
 
     /**
-     * Set the attribute can contain the relation itself
+     * A BelongsTo relation can be set using the dynamic setter
      *
      * @param string $key
      * @param mixed $value
@@ -70,11 +106,12 @@ abstract class Model extends EloquentModel
      */
     public function setAttribute($key, $value)
     {
-        $relation = $this->getRelationObject($key);
-        if (is_a($relation, BelongsTo::class)) {
-            $relation->associate($value);
-
-            return $this;
+        if (method_exists($this, $key) === true) {
+            $relation = $this->$key();
+            if (is_a($relation, BelongsTo::class)) {
+                $relation->associate($value);
+                return $this;
+            }
         }
 
         return parent::setAttribute($key, $value);
@@ -91,20 +128,9 @@ abstract class Model extends EloquentModel
         return new Builder($query);
     }
 
-    /**
-     * Return the relation matching the name or null if doesn't exist
-     *
-     * @param $relation_name
-     * @return mixed
+    /*
+     * ------> Relation methods (add, get, remove, compare) <-------
      */
-    public function getRelationObject($relation_name)
-    {
-        if (method_exists($this, $relation_name) === false) {
-            return null;
-        }
-
-        return $this->$relation_name();
-    }
 
     /**
      * Get the object from a relation (based on $relation_name) or an empty object (if $return_empty_object = true)
@@ -112,15 +138,17 @@ abstract class Model extends EloquentModel
      * @param $relation_name
      * @param bool|false $return_empty_object
      * @return mixed
+     * @throws \Exception
      */
-    protected function  getAssociatedObject($relation_name, $return_empty_object = false)
+    public function  getAssociatedObject($relation_name, $return_empty_object = false)
     {
-        $result_from_relation = $this->getRelationValue(lcfirst($relation_name));
+        $relation_name = lcfirst($relation_name);
+        $relation = $this->$relation_name();
+
+        $result_from_relation = $this->getRelationValue($relation_name);
 
         if (is_null($result_from_relation) && $return_empty_object === true) {
-            if (!is_null($relation = $this->getRelationObject($relation_name))) {
-                $result_from_relation = $relation->getRelated();
-            }
+            $result_from_relation = $relation->getRelated();
         }
 
         return $result_from_relation;
@@ -134,11 +162,10 @@ abstract class Model extends EloquentModel
      * @return bool
      * @throws \Exception
      */
-    protected function  compareAssociatedObject($relation_name, $object)
+    public function  compareAssociatedObject($relation_name, $object)
     {
-        if (is_null($relation = $this->getRelationObject($relation_name))) {
-            throw new \Exception('Unknown relation ' . $relation_name);
-        }
+        $relation_name = lcfirst($relation_name);
+        $relation = $this->$relation_name();
 
         $relation_links = $this->relationLinksTo($relation, $object);
         foreach ($relation_links as $key => $value) {
@@ -151,36 +178,6 @@ abstract class Model extends EloquentModel
     }
 
     /**
-     * Remove the associated elements (collection or model). Different than deleted them
-     *
-     * @param $relation_name
-     * @param $object
-     * @return array
-     * @throws \Exception
-     */
-    protected function  removeAssociatedObject($relation_name, $object)
-    {
-        if (is_null($relation = $this->getRelationObject($relation_name))) {
-            throw new \Exception('Unknown relation ' . $relation_name);
-        }
-
-        switch (get_class($relation)) {
-
-            case HasMany::class:
-                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
-                $return = (count($objects) != 0) ? $relation->whereIn('id', $objects->modelKeys())->delete() : [];
-                break;
-
-            case BelongsToMany::class:
-                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
-                $return = (count($objects) != 0) ? $relation->detach($objects->modelKeys()) : [];
-                break;
-        }
-
-        return $return;
-    }
-
-    /**
      * Link the object (collection or model) to the relation based on the type of relation
      *
      * @param $relation_name
@@ -188,11 +185,10 @@ abstract class Model extends EloquentModel
      * @return array
      * @throws \Exception
      */
-    protected function  addAssociatedObject($relation_name, $object)
+    public function  addAssociatedObject($relation_name, $object)
     {
-        if (is_null($relation = $this->getRelationObject($relation_name))) {
-            throw new \Exception('Unknown relation ' . $relation_name);
-        }
+        $relation_name = lcfirst($relation_name);
+        $relation = $this->$relation_name();
 
         switch (get_class($relation)) {
 
@@ -210,8 +206,12 @@ abstract class Model extends EloquentModel
 
             case BelongsTo::class:
             case MorphTo::class:
-                $return = $relation->associate($object);
-                $this->save();
+                $relation->associate($object);
+                $return = $this->save();
+                break;
+
+            default:
+                throw new \Exception('addAssociatedObject() don\'t work on this type of relation yet');
                 break;
         }
 
@@ -219,11 +219,45 @@ abstract class Model extends EloquentModel
     }
 
     /**
-     * Return the links between a relation and a model (used for the comparison)
+     * Remove the associated elements (collection or model). Different than deleted them
      *
-     * @param Relation $relation
+     * @param $relation_name
+     * @param $object
+     * @return array
+     * @throws \Exception
+     */
+    public function  removeAssociatedObject($relation_name, $object)
+    {
+        $relation_name = lcfirst($relation_name);
+        $relation = $this->$relation_name();
+
+        switch (get_class($relation)) {
+
+            case HasMany::class:
+                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
+                $return = (count($objects) != 0) ? $relation->whereIn('id', $objects->modelKeys())->delete() : [];
+                break;
+
+            case BelongsToMany::class:
+                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
+                $return = (count($objects) != 0) ? $relation->detach($objects->modelKeys()) : [];
+                break;
+
+            default:
+                throw new \Exception('removeAssociatedObject() don\'t work on this type of relation yet');
+                break;
+        }
+
+        return $return;
+    }
+
+    /**
+     * Return the values used for a relation
+     *
+     * @param \Illuminate\Database\Eloquent\Relations\Relation $relation
      * @param $link_to
      * @return array
+     * @throws \Exception
      */
     protected function  relationLinksTo(Relation $relation, $link_to)
     {
@@ -249,56 +283,16 @@ abstract class Model extends EloquentModel
                     $relation->getForeignKey() => $model_id
                 ];
                 break;
+
+            default:
+                throw new \Exception('WhereRelation() don\'t work on this type of relation yet');
+                break;
         }
     }
 
-    /**
-     * Return an object in the same namespace than the current class
-     *
-     * @param $object_name
-     * @return mixed
+    /*
+     * ------> Scopes for Builder <-------
      */
-    static function object($object_name)
-    {
-        $class_namespace = get_class_namespace(static::class);
-        $class_name = get_class_basename($object_name);
-
-        $class_path = $class_namespace . '\\' . ucfirst($class_name);
-
-        return class_exists($class_path) ? new $class_path() : null;
-    }
-
-    /**
-     * Allow the call of getTable() in a static way
-     *
-     * @return mixed
-     */
-    static function table()
-    {
-        return with(new static)->getTable();
-    }
-
-    /**
-     * Allow a static call on the getTableColumn() method
-     *
-     * @param $column
-     * @return mixed
-     */
-    static function  tableColumn($column)
-    {
-        return with(new static)->getTableColumn($column);
-    }
-
-    /**
-     * Return the column concatenated to the table name
-     *
-     * @param $column
-     * @return string
-     */
-    public function getTableColumn($column)
-    {
-        return table_column($this->getTable(), $column);
-    }
 
     /**
      * Scope to link a relation directly
@@ -311,9 +305,6 @@ abstract class Model extends EloquentModel
     public function     scopeWhereRelation($query, $relation_name, $object)
     {
         $relation_links = $this->relationLinksTo($this->$relation_name(), $object);
-        if (is_null($relation_links)) {
-            throw new \Exception('WhereRelation doesn\'t work on ' . $relation_name . ' relations yet');
-        }
 
         foreach ($relation_links as $key => $value) {
             if (is_array($value)) {

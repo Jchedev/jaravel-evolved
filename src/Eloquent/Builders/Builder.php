@@ -76,10 +76,10 @@ class Builder extends EloquentBuilder
      * Overwrite the whereIn method to add the table name in front of the column
      *
      * @param $column
-     * @param array $in
+     * @param $in
      * @return mixed
      */
-    public function whereIn($column, Array $in)
+    public function whereIn($column, $in)
     {
         return parent::whereIn($this->getModelTableColumn($column), $in);
     }
@@ -88,10 +88,10 @@ class Builder extends EloquentBuilder
      * Overwrite the whereBetween method to add the table name in front of the column
      *
      * @param $column
-     * @param array $in
+     * @param $in
      * @return mixed
      */
-    public function whereBetween($column, Array $in)
+    public function whereBetween($column, $in)
     {
         return parent::whereBetween($this->getModelTableColumn($column), $in);
     }

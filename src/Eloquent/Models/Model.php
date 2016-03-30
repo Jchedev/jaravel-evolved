@@ -106,11 +106,19 @@ abstract class Model extends EloquentModel
      */
     public function setAttribute($key, $value)
     {
-        if (method_exists($this, $key) === true) {
-            $relation = $this->$key();
-            if (is_a($relation, BelongsTo::class)) {
-                $relation->associate($value);
-                return $this;
+        if (method_exists($this, 'set' . ucfirst(camel_case($key)) . 'Attribute') === false) {
+
+            if (method_exists($this, $key) === true) {
+                $relation = $this->$key();
+                if (is_a($relation, BelongsTo::class)) {
+                    $relation->associate($value);
+
+                    return $this;
+                }
+            }
+
+            if (array_get($this->casts, $key) == 'boolean') {
+                $value = ($value === true ? 1 : ($value === false ? 0 : $value));
             }
         }
 

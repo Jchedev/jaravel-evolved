@@ -1,6 +1,6 @@
 <?php
 
-namespace Jchedev\Eloquent\Models;
+namespace Jchedev\Laravel\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Jchedev\Eloquent\Builders\Builder;
+use Jchedev\Laravel\Eloquent\Builders\Builder;
 
 abstract class Model extends EloquentModel
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Jchedev\Eloquent\Builders;
+namespace Jchedev\Laravel\Eloquent\Builders;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Jchedev\Console\Commands;
+namespace Jchedev\Laravel\Console\Commands;
 
 use Symfony\Component\Console\Output\OutputInterface;
 

@@ -6,7 +6,7 @@
  * Time: 15:48
  */
 
-namespace Jchedev\Traits;
+namespace Jchedev\Laravel\Traits;
 
 trait WithoutCreatedAt
 {

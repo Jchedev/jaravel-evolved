@@ -1,6 +1,6 @@
 <?php
 
-namespace Jchedev\Http\Middleware;
+namespace Jchedev\Laravel\Http\Middleware;
 
 use Illuminate\Http\Response;
 

@@ -2,15 +2,13 @@
 
 namespace Jchedev\Laravel\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Jchedev\Laravel\Eloquent\Builders\Builder;
 
 abstract class Model extends EloquentModel
@@ -47,58 +45,19 @@ abstract class Model extends EloquentModel
         return table_column($this->getTable(), $column);
     }
 
-    /*
-     * ------> Laravel methods overwritten <-------
-     */
-
     /**
-     * Magic method allowing the use of associatedXXXX() to access relation object
+     * Overwrite the Eloquent\Builder by a custom one with even more features
      *
-     * @param string $method
-     * @param array $parameters
-     * @return mixed
+     * @param \Illuminate\Database\Query\Builder $query
+     * @return Builder
      */
-    public function __call($method, $parameters)
+    public function newEloquentBuilder($query)
     {
-        $proxy_methods = [
-            /*
-             * Proxy method for $this->relation_name which return the query results of a relation.
-             * Can define first parameter as true, to always return an object even if NULL
-             */
-            '/^associated(.*)$/'        => 'getAssociatedObject',
-
-            /*
-             * Proxy method to link an object through a relation.
-             * The action will be selected based on the type of relation
-             */
-            '/^addAssociated(.*)$/'     => 'addAssociatedObject',
-
-            /*
-             * Proxy method to link an object through a relation.
-             * The action will be selected based on the type of relation
-             */
-            '/^removeAssociated(.*)$/'  => 'removeAssociatedObject',
-
-            /*
-             * Proxy method to link an object through a relation.
-             * The action will be selected based on the type of relation
-             */
-            '/^compareAssociated(.*)$/' => 'compareAssociatedObject'
-        ];
-
-        foreach ($proxy_methods as $regex => $method_name) {
-            if (preg_match($regex, $method, $method_parameters)) {
-                $parameters = array_merge(array_slice($method_parameters, 1), $parameters);
-
-                return call_user_func_array([$this, $method_name], $parameters);
-            }
-        }
-
-        return parent::__call($method, $parameters);
+        return new Builder($query);
     }
 
     /**
-     * A BelongsTo relation can be set using the dynamic setter
+     * A BelongsTo relation can set using the dynamic setter (still need to be fillable) and boolean are automatically casted
      *
      * @param string $key
      * @param mixed $value
@@ -126,19 +85,55 @@ abstract class Model extends EloquentModel
     }
 
     /**
-     * Overwrite the Eloquent\Builder by a custom one with even more features
+     * Magic method allowing the use of associatedXXXX() to access relation object
      *
-     * @param \Illuminate\Database\Query\Builder $query
-     * @return Builder
+     * @param string $method
+     * @param array $parameters
+     * @return mixed
      */
-    public function newEloquentBuilder($query)
+    public function __call($method, $parameters)
     {
-        return new Builder($query);
+        $proxy_methods = [
+            /*
+             * Proxy method for $this->relation_name which return the query results of a relation.
+             * Can define first parameter as true, to always return an object even if NULL
+             */
+            '/^associated(.*)$/'       => 'getAssociatedObject',
+
+            /*
+             * Proxy method to link an object through a relation.
+             * The action will be selected based on the type of relation
+             */
+            '/^addAssociated(.*)$/'    => 'addAssociatedObject',
+
+            /*
+             * Proxy method to count objects through a relation.
+             * The action will be selected based on the type of relation
+             */
+            '/^countAssociated(.*)$/'  => 'countAssociatedObject',
+
+            /*
+             * Proxy method to link an object through a relation.
+             * The action will be selected based on the type of relation
+             */
+            '/^removeAssociated(.*)$/' => 'removeAssociatedObject'
+        ];
+
+        // Test each methods above to see if any match the name passed as parameter
+        foreach ($proxy_methods as $regex => $method_name) {
+            if (preg_match($regex, $method, $method_parameters)) {
+                $parameters = array_merge(array_map('lcfirst', array_slice($method_parameters, 1)), $parameters);
+
+                return call_user_func_array([$this, $method_name], $parameters);
+            }
+        }
+
+        return parent::__call($method, $parameters);
     }
 
     /*
-     * ------> Relation methods (add, get, remove, compare) <-------
-     */
+    * ------> Relation methods (add, get, remove) <-------
+    */
 
     /**
      * Get the object from a relation (based on $relation_name) or an empty object (if $return_empty_object = true)
@@ -150,7 +145,6 @@ abstract class Model extends EloquentModel
      */
     public function  getAssociatedObject($relation_name, $return_empty_object = false)
     {
-        $relation_name = lcfirst($relation_name);
         $relation = $this->$relation_name();
 
         $result_from_relation = $this->getRelationValue($relation_name);
@@ -162,27 +156,16 @@ abstract class Model extends EloquentModel
         return $result_from_relation;
     }
 
-    /**
-     * Compare an object with the return of a relation
-     *
-     * @param $relation_name
-     * @param $object
-     * @return bool
-     * @throws \Exception
-     */
-    public function  compareAssociatedObject($relation_name, $object)
+    public function  countAssociatedObject($relation_name)
     {
-        $relation_name = lcfirst($relation_name);
-        $relation = $this->$relation_name();
+        $property_name = 'count_' . $relation_name;
 
-        $relation_links = $this->relationLinksTo($relation, $object);
-        foreach ($relation_links as $key => $value) {
-            if ($this->$key != $value) {
-                return false;
-            }
+        $relation = $this->$relation_name();
+        if (!isset($this->property_name)) {
+            $this->$property_name = $relation->count();
         }
 
-        return true;
+        return $this->$property_name;
     }
 
     /**
@@ -195,7 +178,6 @@ abstract class Model extends EloquentModel
      */
     public function  addAssociatedObject($relation_name, $object)
     {
-        $relation_name = lcfirst($relation_name);
         $relation = $this->$relation_name();
 
         switch (get_class($relation)) {
@@ -219,7 +201,7 @@ abstract class Model extends EloquentModel
                 break;
 
             default:
-                throw new \Exception('addAssociatedObject() don\'t work on this type of relation yet');
+                throw new \Exception('addAssociatedObject() doesn\'t work on this type of relation yet');
                 break;
         }
 
@@ -236,7 +218,6 @@ abstract class Model extends EloquentModel
      */
     public function  removeAssociatedObject($relation_name, $object)
     {
-        $relation_name = lcfirst($relation_name);
         $relation = $this->$relation_name();
 
         switch (get_class($relation)) {
@@ -252,88 +233,10 @@ abstract class Model extends EloquentModel
                 break;
 
             default:
-                throw new \Exception('removeAssociatedObject() don\'t work on this type of relation yet');
+                throw new \Exception('removeAssociatedObject() doesn\'t work on this type of relation yet');
                 break;
         }
 
         return $return;
-    }
-
-    /**
-     * Return the values used for a relation
-     *
-     * @param \Illuminate\Database\Eloquent\Relations\Relation $relation
-     * @param $link_to
-     * @return array
-     * @throws \Exception
-     */
-    protected function  relationLinksTo(Relation $relation, $link_to)
-    {
-        if (is_a($link_to, Collection::class) || is_a($link_to, LengthAwarePaginator::class)) {
-            $model_id = $link_to->modelKeys();
-            $model_class = get_class($link_to->first());
-        } else {
-            $model_id = $link_to->id;
-            $model_class = get_class($link_to);
-        }
-
-        switch (get_class($relation)) {
-
-            case BelongsTo::class:
-                return [
-                    $relation->getForeignKey() => $model_id
-                ];
-                break;
-
-            case MorphTo::class:
-                return [
-                    $relation->getMorphType()  => $model_class,
-                    $relation->getForeignKey() => $model_id
-                ];
-                break;
-
-            default:
-                throw new \Exception('WhereRelation() don\'t work on this type of relation yet');
-                break;
-        }
-    }
-
-    /*
-     * ------> Scopes for Builder <-------
-     */
-
-    /**
-     * Scope to link a relation directly
-     *
-     * @param $query
-     * @param $relation_name
-     * @param $object
-     * @throws \Exception
-     */
-    public function     scopeWhereRelation($query, $relation_name, $object)
-    {
-        $relation_links = $this->relationLinksTo($this->$relation_name(), $object);
-
-        foreach ($relation_links as $key => $value) {
-            if (is_array($value)) {
-                $query->whereIn($key, $value);
-            } else {
-                $query->where($key, '=', $value);
-            }
-        }
-    }
-
-    /**
-     * Create the orWhere relation part
-     *
-     * @param $query
-     * @param $relation_name
-     * @param \Illuminate\Database\Eloquent\Model $object
-     */
-    public function     scopeOrWhereRelation($query, $relation_name, \Illuminate\Database\Eloquent\Model $object)
-    {
-        $query->orWhere(function ($join) use ($relation_name, $object) {
-            $this->scopeWhereRelation($join, $relation_name, $object);
-        });
     }
 }

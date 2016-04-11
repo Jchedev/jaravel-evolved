@@ -8,23 +8,162 @@ use Illuminate\Support\Facades\DB;
 
 class Builder extends EloquentBuilder
 {
+    protected $counts = [];
+
     /**
-     * Add a Select * on the model when set
+     * We automatically select all columns for the model to simplify some logic around select/addSelect
      *
-     * @param Model $model
+     * @param \Illuminate\Database\Eloquent\Model $model
      * @return $this
      */
     public function setModel(Model $model)
     {
         parent::setModel($model);
 
-        $this->select($this->getModelTableColumn('*'));
+        $this->select('*');
 
         return $this;
     }
 
     /**
-     * Method randomizing the selection returned
+     * Attach the name of the table to each column of the select if possible
+     *
+     * @param array $columns
+     * @return mixed
+     */
+    public function select($columns = ['*'])
+    {
+        $columns = !is_array($columns) ? [$columns] : $columns;
+
+        foreach ($columns as $key => $column) {
+            $columns[$key] = $this->getModelTableColumn($column);
+        }
+
+        return parent::select($columns);
+    }
+
+    /**
+     *
+     * @param array $columns
+     * @return \Illuminate\Database\Eloquent\Collection|static[]
+     */
+    public function get($columns = ['*'])
+    {
+        $this->addCountSub();
+
+        return parent::get($columns);
+    }
+
+    /**
+     * Overwrite the where method to add the table name in front of the column
+     *
+     * @param string $column
+     * @param null $operator
+     * @param null $value
+     * @param string $boolean
+     * @return $this
+     */
+    public function where($column, $operator = null, $value = null, $boolean = 'and')
+    {
+        return parent::where($this->getModelTableColumn($column), $operator, $value, $boolean);
+    }
+
+    /**
+     * Overwrite the whereNull method to add the table name in front of the column
+     *
+     * @param $column
+     * @param string $boolean
+     * @param bool|false $not
+     * @return mixed
+     */
+    public function whereNull($column, $boolean = 'and', $not = false)
+    {
+        return parent::whereNull($this->getModelTableColumn($column), $boolean, $not);
+    }
+
+    /**
+     * Overwrite the whereIn method to add the table name in front of the column
+     *
+     * @param $column
+     * @param $values
+     * @param string $boolean
+     * @param bool|false $not
+     * @return mixed
+     */
+    public function whereIn($column, $values, $boolean = 'and', $not = false)
+    {
+        return parent::whereIn($this->getModelTableColumn($column), $values, $boolean, $not);
+    }
+
+    /**
+     * Overwrite the whereBetween method to add the table name in front of the column
+     *
+     * @param $column
+     * @param array $values
+     * @param string $boolean
+     * @param bool|false $not
+     * @return mixed
+     */
+    public function whereBetween($column, array $values, $boolean = 'and', $not = false)
+    {
+        return parent::whereBetween($this->getModelTableColumn($column), $values, $boolean, $not);
+    }
+
+    /**
+     * Improved version of the whereHas which compare to a model directly
+     *
+     * @param $relation_name
+     * @param \Illuminate\Database\Eloquent\Model $object
+     * @param string $operator
+     * @param int $count
+     * @return \Illuminate\Database\Eloquent\Builder|static
+     */
+    public function whereRelationIs($relation_name, Model $object, $operator = '>=', $count = 1)
+    {
+        return $this->whereHas($relation_name, function ($join) use ($object) {
+            $primary_key = $join->getModel()->getKeyName();
+
+            $join->where($primary_key, '=', $object->$primary_key);
+        }, $operator, $count);
+    }
+
+    /**
+     * Improved version of the whereDoesntHave which compare to a model directly
+     *
+     * @param $relation_name
+     * @param \Illuminate\Database\Eloquent\Model $object
+     * @return \Illuminate\Database\Eloquent\Builder|static
+     */
+    public function whereRelationIsNot($relation_name, Model $object)
+    {
+        return $this->whereDoesntHave($relation_name, function ($join) use ($object) {
+            $primary_key = $join->getModel()->getKeyName();
+
+            $join->where($primary_key, '=', $object->$primary_key);
+        });
+    }
+
+    /**
+     * Improved version of the whereHas which compare to a model directly
+     *
+     * @param $relation_name
+     * @param \Illuminate\Database\Eloquent\Model $object
+     * @param string $operator
+     * @param int $count
+     * @return \Illuminate\Database\Eloquent\Builder|static
+     */
+    public function orWhereRelationIs($relation_name, Model $object, $operator = '>=', $count = 1)
+    {
+        return $this->orWhereHas($relation_name, function ($join) use ($object) {
+            $primary_key = $join->getModel()->getKeyName();
+
+            $join->where($primary_key, '=', $object->$primary_key);
+        }, $operator, $count);
+    }
+
+
+    /**
+     * Sort the results in a randomized order
      *
      * @return $this
      */
@@ -48,7 +187,35 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * If the model associated has the method getTableColumn (needs to inherits from \Jchedev\Eloquent\Model), then use it
+     * This count keeps in mind the limit applied to the query
+     *
+     * @param string $columns
+     * @return int
+     */
+    public function countWithLimit($columns = '*')
+    {
+        $parent_count = $this->count($columns);
+
+        $limit = $this->getQuery()->limit;
+
+        return (!is_null($limit) && $limit < $parent_count) ? $limit : $parent_count;
+    }
+
+    /**
+     * Save the list of relations to add as a count
+     *
+     * @param $relations
+     * @return $this
+     */
+    public function withCount($relations)
+    {
+        $this->counts = array_merge($this->counts, (array)$relations);
+
+        return $this;
+    }
+
+    /**
+     * Call the helper available in the package to generates the name of the column with the table name attached
      *
      * @param $column
      * @return mixed
@@ -59,77 +226,21 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * Overwrite the where method to add the table name in front of the column
-     *
-     * @param string $column
-     * @param null $operator
-     * @param null $value
-     * @param string $boolean
-     * @return $this
+     * Add the subqueries to count easily defined relations
      */
-    public function where($column, $operator = null, $value = null, $boolean = 'and')
+    protected function  addCountSub()
     {
-        return parent::where($this->getModelTableColumn($column), $operator, $value, $boolean);
-    }
+        foreach ($this->counts as $relation_to_count) {
+            $related = $this->getModel()->$relation_to_count();
 
-    /**
-     * Overwrite the whereIn method to add the table name in front of the column
-     *
-     * @param $column
-     * @param $in
-     * @return mixed
-     */
-    public function whereIn($column, $in)
-    {
-        return parent::whereIn($this->getModelTableColumn($column), $in);
-    }
-
-    /**
-     * Overwrite the whereBetween method to add the table name in front of the column
-     *
-     * @param $column
-     * @param $in
-     * @return mixed
-     */
-    public function whereBetween($column, $in)
-    {
-        return parent::whereBetween($this->getModelTableColumn($column), $in);
-    }
-
-    /**
-     * Merge another builder into a sub "SELECT()" to this builder
-     *
-     * @param \Illuminate\Database\Query\Builder $builder
-     * @param null $as
-     * @return $this
-     */
-    public function addSelectFromBuilder(\Illuminate\Database\Query\Builder $builder, $as = null)
-    {
-        $sql = '(' . $builder->toSql() . ')';
-        if (!is_null($as)) {
-            $sql .= ' as ' . $as;
+            $this->selectSub(
+                $related->getModel()->select(DB::raw('COUNT(id)'))->where(
+                    $related->getForeignKey(),
+                    '=',
+                    DB::raw($related->getQualifiedParentKeyName())
+                )->toBase(),
+                'count_' . $relation_to_count
+            );
         }
-
-        $this->addSelect(\DB::raw($sql));
-
-        foreach ($builder->getBindings() as $binding) {
-            $this->addBinding($binding, 'select');
-        }
-
-        return $this;
-    }
-
-    /**
-     * New method to execute a count() but keeping the limit in mind. Laravel should probably do that in fact.
-     *
-     * @return int
-     */
-    public function countWithLimit()
-    {
-        $parent_count = $this->count();
-
-        $limit = $this->getQuery()->limit;
-
-        return (!is_null($limit) && $limit < $parent_count) ? $limit : $parent_count;
     }
 }

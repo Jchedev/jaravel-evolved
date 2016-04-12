@@ -156,16 +156,34 @@ abstract class Model extends EloquentModel
         return $result_from_relation;
     }
 
+    /**
+     * Count the number of models associated through a relation (and cache it)
+     *
+     * @param $relation_name
+     * @return mixed
+     */
     public function  countAssociatedObject($relation_name)
     {
         $property_name = 'count_' . $relation_name;
-
-        $relation = $this->$relation_name();
-        if (!isset($this->property_name)) {
-            $this->$property_name = $relation->count();
+        if (!isset($this->$property_name) || is_null($this->$property_name)) {
+            $this->$property_name = $this->$relation_name()->count();
         }
 
         return $this->$property_name;
+    }
+
+    /**
+     * Clear the cache of the count of models through a relation
+     *
+     * @param $relation_name
+     * @return $this
+     */
+    public function uncountAssociatedObject($relation_name)
+    {
+        $property_name = 'count_' . $relation_name;
+        $this->$property_name = null;
+
+        return $this;
     }
 
     /**
@@ -205,6 +223,8 @@ abstract class Model extends EloquentModel
                 break;
         }
 
+        $this->uncountAssociatedObject($relation_name);
+
         return $return;
     }
 
@@ -236,6 +256,8 @@ abstract class Model extends EloquentModel
                 throw new \Exception('removeAssociatedObject() doesn\'t work on this type of relation yet');
                 break;
         }
+
+        $this->uncountAssociatedObject($relation_name);
 
         return $return;
     }

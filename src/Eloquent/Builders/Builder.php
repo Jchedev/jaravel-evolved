@@ -51,7 +51,14 @@ class Builder extends EloquentBuilder
     {
         $this->addCountSub();
 
-        return parent::get($columns);
+        return parent::get($columns)->map(function ($element) {
+            foreach ($this->counts as $relation_name => $saved_as) {
+                $element->saveCountAssociatedObject($relation_name, $element[$saved_as]);
+                unset($element[$saved_as]);
+            }
+
+            return $element;
+        });
     }
 
     /**
@@ -209,7 +216,9 @@ class Builder extends EloquentBuilder
      */
     public function withCount($relations)
     {
-        $this->counts = array_merge($this->counts, (array)$relations);
+        foreach ((array)$relations as $relation) {
+            $this->counts[$relation] = 'computed_count_' . $relation;
+        }
 
         return $this;
     }
@@ -227,20 +236,28 @@ class Builder extends EloquentBuilder
 
     /**
      * Add the subqueries to count easily defined relations
+     *
+     * @return array
      */
-    protected function  addCountSub()
+    private function  addCountSub()
     {
-        foreach ($this->counts as $relation_to_count) {
-            $related = $this->getModel()->$relation_to_count();
+        foreach ($this->counts as $relation => $save_count_as) {
+            $related = $this->getModel()->$relation();
 
             $this->selectSub(
-                $related->getModel()->select(DB::raw('COUNT(id)'))->where(
-                    $related->getForeignKey(),
-                    '=',
-                    DB::raw($related->getQualifiedParentKeyName())
-                )->toBase(),
-                'count_' . $relation_to_count
+                $related
+                    ->getModel()
+                    ->select(DB::raw('COUNT(id)'))
+                    ->where(
+                        $related->getForeignKey(),
+                        '=',
+                        DB::raw($related->getQualifiedParentKeyName())
+                    )
+                    ->toBase(),
+                $save_count_as
             );
         }
+
+        return $this;
     }
 }

@@ -4,15 +4,17 @@ namespace Jchedev\Laravel\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Jchedev\Laravel\Eloquent\Builders\Builder;
+use Jchedev\Laravel\Eloquent\Collections\Collection;
 
 abstract class Model extends EloquentModel
 {
+    protected $relations_count = [];
+
     /**
      * Allow the call of getTable() in a static way
      *
@@ -57,6 +59,17 @@ abstract class Model extends EloquentModel
     }
 
     /**
+     * Overwrite the Eloquent\Collection by a custom one with even more features
+     *
+     * @param array $models
+     * @return \Jchedev\Laravel\Eloquent\Collections\Collection
+     */
+    public function newCollection(array $models = [])
+    {
+        return new Collection($models);
+    }
+
+    /**
      * A BelongsTo relation can set using the dynamic setter (still need to be fillable) and boolean are automatically casted
      *
      * @param string $key
@@ -98,25 +111,19 @@ abstract class Model extends EloquentModel
              * Proxy method for $this->relation_name which return the query results of a relation.
              * Can define first parameter as true, to always return an object even if NULL
              */
-            '/^associated(.*)$/'       => 'getAssociatedObject',
+            '/^associated(.*)$/'      => 'getAssociatedObject',
 
             /*
              * Proxy method to link an object through a relation.
              * The action will be selected based on the type of relation
              */
-            '/^addAssociated(.*)$/'    => 'addAssociatedObject',
+            '/^addAssociated(.*)$/'   => 'addAssociatedObject',
 
             /*
              * Proxy method to count objects through a relation.
              * The action will be selected based on the type of relation
              */
-            '/^countAssociated(.*)$/'  => 'countAssociatedObject',
-
-            /*
-             * Proxy method to link an object through a relation.
-             * The action will be selected based on the type of relation
-             */
-            '/^removeAssociated(.*)$/' => 'removeAssociatedObject'
+            '/^countAssociated(.*)$/' => 'countAssociatedObject'
         ];
 
         // Test each methods above to see if any match the name passed as parameter
@@ -157,6 +164,20 @@ abstract class Model extends EloquentModel
     }
 
     /**
+     * Save the value of a count for an associated object
+     *
+     * @param $relation_name
+     * @param $value
+     * @return $this
+     */
+    public function saveCountAssociatedObject($relation_name, $value)
+    {
+        $this->relations_count[$relation_name] = $value;
+
+        return $this;
+    }
+
+    /**
      * Count the number of models associated through a relation (and cache it)
      *
      * @param $relation_name
@@ -164,26 +185,11 @@ abstract class Model extends EloquentModel
      */
     public function  countAssociatedObject($relation_name)
     {
-        $property_name = 'count_' . $relation_name;
-        if (!isset($this->$property_name) || is_null($this->$property_name)) {
-            $this->$property_name = $this->$relation_name()->count();
+        if (is_null(array_get($this->relations_count, $relation_name))) {
+            $this->relations_count[$relation_name] = $this->$relation_name()->count();
         }
 
-        return $this->$property_name;
-    }
-
-    /**
-     * Clear the cache of the count of models through a relation
-     *
-     * @param $relation_name
-     * @return $this
-     */
-    public function uncountAssociatedObject($relation_name)
-    {
-        $property_name = 'count_' . $relation_name;
-        $this->$property_name = null;
-
-        return $this;
+        return $this->relations_count[$relation_name];
     }
 
     /**
@@ -201,64 +207,67 @@ abstract class Model extends EloquentModel
         switch (get_class($relation)) {
 
             case HasMany::class:
-            case BelongsToMany::class:
-                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
-                $not_existing = $objects->diff($this->getAssociatedObject($relation_name));
-
-                $return = collect((count($not_existing) != 0) ? $relation->saveMany($not_existing->all()) : []);
+                $collection = $object;
+                if (!is_a($collection, SupportCollection::class)) {
+                    $collection = collect(!is_array($object) ? [$object] : $object);
+                }
+                $return = $this->addHasManyAssociatedObject($relation, $collection);
                 break;
 
             case HasOne::class:
-                $return = $relation->save($object);
+                $return = $this->addHasOneAssociatedObject($relation, $object);
                 break;
 
-            case BelongsTo::class:
             case MorphTo::class:
-                $relation->associate($object);
-                $return = $this->save();
+            case BelongsTo::class:
+                $return = $this->addBelongsToAssociatedObject($relation, $object);
                 break;
 
             default:
-                throw new \Exception('addAssociatedObject() doesn\'t work on this type of relation yet');
+                throw new \Exception('addAssociatedObject() is not working on this type of relation yet');
                 break;
         }
 
-        $this->uncountAssociatedObject($relation_name);
+        $this->saveCountAssociatedObject($relation_name, null);
 
         return $return;
     }
 
     /**
-     * Remove the associated elements (collection or model). Different than deleted them
+     * Add an object through a HasOne relation
      *
-     * @param $relation_name
-     * @param $object
-     * @return array
-     * @throws \Exception
+     * @param \Illuminate\Database\Eloquent\Relations\HasOne $relation
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return \Illuminate\Database\Eloquent\Model
      */
-    public function  removeAssociatedObject($relation_name, $object)
+    protected function  addHasOneAssociatedObject(HasOne $relation, \Illuminate\Database\Eloquent\Model $model)
     {
-        $relation = $this->$relation_name();
+        return $relation->save($model);
+    }
 
-        switch (get_class($relation)) {
+    /**
+     * Add an object through a BelongsTo relation
+     *
+     * @param \Illuminate\Database\Eloquent\Relations\BelongsTo $relation
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return bool
+     */
+    protected function  addBelongsToAssociatedObject(BelongsTo $relation, \Illuminate\Database\Eloquent\Model $model)
+    {
+        $relation->associate($model);
 
-            case HasMany::class:
-                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
-                $return = (count($objects) != 0) ? $relation->whereIn('id', $objects->modelKeys())->delete() : [];
-                break;
+        return $this->save();
+    }
 
-            case BelongsToMany::class:
-                $objects = is_a($object, Collection::class) ? $object : collect(!is_array($object) ? [$object] : $object);
-                $return = (count($objects) != 0) ? $relation->detach($objects->modelKeys()) : [];
-                break;
-
-            default:
-                throw new \Exception('removeAssociatedObject() doesn\'t work on this type of relation yet');
-                break;
-        }
-
-        $this->uncountAssociatedObject($relation_name);
-
-        return $return;
+    /**
+     * Add multiple objects through a HasMany relation
+     *
+     * @param \Illuminate\Database\Eloquent\Relations\HasMany $relation
+     * @param \Illuminate\Support\Collection $objects
+     * @return array|\Traversable
+     */
+    protected function  addHasManyAssociatedObject(HasMany $relation, SupportCollection $objects)
+    {
+        return $relation->saveMany($objects);
     }
 }

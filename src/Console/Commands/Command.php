@@ -96,11 +96,6 @@ abstract class Command extends \Illuminate\Console\Command
             }
             unset ($queries);
         }
-
-        /*
-         * Step 4. Log the result of the command (if activated)
-         * -----------
-         */
     }
 
     /**

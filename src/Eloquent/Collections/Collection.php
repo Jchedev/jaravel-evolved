@@ -19,11 +19,9 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
 
             // Try to apply a Scope Method on a builder representing the collection
             $scope_method = 'scope' . ucfirst($method);
+
             if (method_exists($first_element, $scope_method)) {
-                return call_user_func_array([$first_element, $scope_method], array_merge(
-                    [$this->builder()],
-                    $parameters
-                ));
+                return call_user_func_array([$first_element, $scope_method], array_merge([$this->builder()], $parameters ));
             }
         }
 
@@ -38,6 +36,7 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
     public function builder()
     {
         $first_element = $this->first();
+
         if (is_null($first_element)) {
             return null;
         }

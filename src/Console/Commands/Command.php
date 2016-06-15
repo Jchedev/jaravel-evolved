@@ -49,10 +49,12 @@ abstract class Command extends \Illuminate\Console\Command
          */
         if ($this->_count_queries == true || $this->option('with-sql') === true) {
             \DB::enableQueryLog();
+
             $this->_count_queries = true;
         }
 
         $command_name = substr($this->signature, 0, strpos($this->signature, ' '));
+
         $this->info('[*] Beginning of the command ' . $command_name, OutputInterface::VERBOSITY_VERBOSE);
 
         /*
@@ -60,16 +62,20 @@ abstract class Command extends \Illuminate\Console\Command
          * -----------
          */
         $starting_time = microtime(true);
+
         try {
             $return = $this->handleLogic();
+
             if (is_array($return)) {
                 $this->_return = array_merge($this->_return, $return);
             }
+
             $this->onSuccess();
         }
         catch (\Exception $e) {
             $this->onError($e);
         }
+
         $this->_return['execution_time'] = round(microtime(true) - $starting_time, 2);
 
         $this->onComplete();
@@ -84,6 +90,7 @@ abstract class Command extends \Illuminate\Console\Command
          */
         if ($this->_count_queries === true) {
             $queries = \DB::getQueryLog();
+
             $this->_return['nb_queries'] = count($queries);
 
             $this->comment('- Queries: ' . $this->_return['nb_queries'], OutputInterface::VERBOSITY_VERBOSE, 1);
@@ -226,6 +233,7 @@ abstract class Command extends \Illuminate\Console\Command
         }
 
         $this->_active_progressbar->finish();
+
         unset($this->_active_progressbar);
 
         $this->info("");

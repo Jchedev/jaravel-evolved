@@ -73,6 +73,7 @@ function    time_duration($string, $convert_in = 'second')
 function    time_multiplier($from, $to)
 {
     $from = str_singular(strtolower($from));
+
     $to = str_singular(strtolower($to));
 
     if ($from == $to) {

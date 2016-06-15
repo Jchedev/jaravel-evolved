@@ -52,8 +52,10 @@ class Builder extends EloquentBuilder
         $this->addCountSub();
 
         return parent::get($columns)->map(function ($element) {
+
             foreach ($this->counts as $relation_name => $saved_as) {
                 $element->saveCountAssociatedObject($relation_name, $element[$saved_as]);
+
                 unset($element[$saved_as]);
             }
 

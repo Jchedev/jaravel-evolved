@@ -82,6 +82,7 @@ abstract class Model extends EloquentModel
 
             if (method_exists($this, $key) === true) {
                 $relation = $this->$key();
+
                 if (is_a($relation, BelongsTo::class)) {
                     $relation->associate($value);
 
@@ -208,9 +209,11 @@ abstract class Model extends EloquentModel
 
             case HasMany::class:
                 $collection = $object;
+
                 if (!is_a($collection, SupportCollection::class)) {
                     $collection = collect(!is_array($object) ? [$object] : $object);
                 }
+
                 $return = $this->addHasManyAssociatedObject($relation, $collection);
                 break;
 

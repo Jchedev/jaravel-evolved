@@ -119,59 +119,6 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * Improved version of the whereHas which compare to a model directly
-     *
-     * @param $relation_name
-     * @param \Illuminate\Database\Eloquent\Model $object
-     * @param string $operator
-     * @param int $count
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function whereRelationIs($relation_name, Model $object, $operator = '>=', $count = 1)
-    {
-        return $this->whereHas($relation_name, function ($join) use ($object) {
-            $primary_key = $join->getModel()->getKeyName();
-
-            $join->where($primary_key, '=', $object->$primary_key);
-        }, $operator, $count);
-    }
-
-    /**
-     * Improved version of the whereDoesntHave which compare to a model directly
-     *
-     * @param $relation_name
-     * @param \Illuminate\Database\Eloquent\Model $object
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function whereRelationIsNot($relation_name, Model $object)
-    {
-        return $this->whereDoesntHave($relation_name, function ($join) use ($object) {
-            $primary_key = $join->getModel()->getKeyName();
-
-            $join->where($primary_key, '=', $object->$primary_key);
-        });
-    }
-
-    /**
-     * Improved version of the whereHas which compare to a model directly
-     *
-     * @param $relation_name
-     * @param \Illuminate\Database\Eloquent\Model $object
-     * @param string $operator
-     * @param int $count
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orWhereRelationIs($relation_name, Model $object, $operator = '>=', $count = 1)
-    {
-        return $this->orWhereHas($relation_name, function ($join) use ($object) {
-            $primary_key = $join->getModel()->getKeyName();
-
-            $join->where($primary_key, '=', $object->$primary_key);
-        }, $operator, $count);
-    }
-
-
-    /**
      * Sort the results in a randomized order
      *
      * @return $this

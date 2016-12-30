@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\DB;
 
 class Builder extends EloquentBuilder
 {
-    protected $counts = [];
-
     /**
      * We automatically select all columns for the model to simplify some logic around select/addSelect
      *
@@ -40,27 +38,6 @@ class Builder extends EloquentBuilder
         }
 
         return parent::select($columns);
-    }
-
-    /**
-     *
-     * @param array $columns
-     * @return \Illuminate\Database\Eloquent\Collection|static[]
-     */
-    public function get($columns = ['*'])
-    {
-        $this->addCountSub();
-
-        return parent::get($columns)->map(function ($element) {
-
-            foreach ($this->counts as $relation_name => $saved_as) {
-                $element->saveCountAssociatedObject($relation_name, $element[$saved_as]);
-
-                unset($element[$saved_as]);
-            }
-
-            return $element;
-        });
     }
 
     /**
@@ -158,55 +135,13 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * Save the list of relations to add as a count
-     *
-     * @param $relations
-     * @return $this
-     */
-    public function withCount($relations)
-    {
-        foreach ((array)$relations as $relation) {
-            $this->counts[$relation] = 'computed_count_' . $relation;
-        }
-
-        return $this;
-    }
-
-    /**
      * Call the helper available in the package to generates the name of the column with the table name attached
      *
      * @param $column
      * @return mixed
      */
-    public function  getModelTableColumn($column)
+    public function getModelTableColumn($column)
     {
         return table_column($this->getModel()->getTable(), $column);
-    }
-
-    /**
-     * Add the subqueries to count easily defined relations
-     *
-     * @return array
-     */
-    private function  addCountSub()
-    {
-        foreach ($this->counts as $relation => $save_count_as) {
-            $related = $this->getModel()->$relation();
-
-            $this->selectSub(
-                $related
-                    ->getModel()
-                    ->select(DB::raw('COUNT(id)'))
-                    ->where(
-                        $related->getForeignKey(),
-                        '=',
-                        DB::raw($related->getQualifiedParentKeyName())
-                    )
-                    ->toBase(),
-                $save_count_as
-            );
-        }
-
-        return $this;
     }
 }

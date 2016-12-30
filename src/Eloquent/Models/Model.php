@@ -13,8 +13,6 @@ use Jchedev\Laravel\Eloquent\Collections\Collection;
 
 abstract class Model extends EloquentModel
 {
-    protected $relations_count = [];
-
     /**
      * Allow the call of getTable() in a static way
      *
@@ -31,7 +29,7 @@ abstract class Model extends EloquentModel
      * @param $column
      * @return mixed
      */
-    static function  tableColumn($column)
+    static function tableColumn($column)
     {
         return with(new static)->getTableColumn($column);
     }
@@ -68,36 +66,7 @@ abstract class Model extends EloquentModel
     {
         return new Collection($models);
     }
-
-    /**
-     * A BelongsTo relation can set using the dynamic setter (still need to be fillable) and boolean are automatically casted
-     *
-     * @param string $key
-     * @param mixed $value
-     * @return $this|bool|null
-     */
-    public function setAttribute($key, $value)
-    {
-        if (method_exists($this, 'set' . ucfirst(camel_case($key)) . 'Attribute') === false) {
-
-            if (method_exists($this, $key) === true) {
-                $relation = $this->$key();
-
-                if (is_a($relation, BelongsTo::class)) {
-                    $relation->associate($value);
-
-                    return $this;
-                }
-            }
-
-            if (array_get($this->casts, $key) == 'boolean') {
-                $value = ($value === true ? 1 : ($value === false ? 0 : $value));
-            }
-        }
-
-        return parent::setAttribute($key, $value);
-    }
-
+    
     /**
      * Magic method allowing the use of associatedXXXX() to access relation object
      *
@@ -112,19 +81,13 @@ abstract class Model extends EloquentModel
              * Proxy method for $this->relation_name which return the query results of a relation.
              * Can define first parameter as true, to always return an object even if NULL
              */
-            '/^associated(.*)$/'      => 'getAssociatedObject',
+            '/^associated(.*)$/'    => 'getAssociatedObject',
 
             /*
              * Proxy method to link an object through a relation.
              * The action will be selected based on the type of relation
              */
-            '/^addAssociated(.*)$/'   => 'addAssociatedObject',
-
-            /*
-             * Proxy method to count objects through a relation.
-             * The action will be selected based on the type of relation
-             */
-            '/^countAssociated(.*)$/' => 'countAssociatedObject'
+            '/^addAssociated(.*)$/' => 'addAssociatedObject'
         ];
 
         // Test each methods above to see if any match the name passed as parameter
@@ -151,7 +114,7 @@ abstract class Model extends EloquentModel
      * @return mixed
      * @throws \Exception
      */
-    public function  getAssociatedObject($relation_name, $return_empty_object = false)
+    public function getAssociatedObject($relation_name, $return_empty_object = false)
     {
         $relation = $this->$relation_name();
 
@@ -165,35 +128,6 @@ abstract class Model extends EloquentModel
     }
 
     /**
-     * Save the value of a count for an associated object
-     *
-     * @param $relation_name
-     * @param $value
-     * @return $this
-     */
-    public function saveCountAssociatedObject($relation_name, $value)
-    {
-        $this->relations_count[$relation_name] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Count the number of models associated through a relation (and cache it)
-     *
-     * @param $relation_name
-     * @return mixed
-     */
-    public function  countAssociatedObject($relation_name)
-    {
-        if (is_null(array_get($this->relations_count, $relation_name))) {
-            $this->relations_count[$relation_name] = $this->$relation_name()->count();
-        }
-
-        return $this->relations_count[$relation_name];
-    }
-
-    /**
      * Link the object (collection or model) to the relation based on the type of relation
      *
      * @param $relation_name
@@ -201,7 +135,7 @@ abstract class Model extends EloquentModel
      * @return array
      * @throws \Exception
      */
-    public function  addAssociatedObject($relation_name, $object)
+    public function addAssociatedObject($relation_name, $object)
     {
         $relation = $this->$relation_name();
 
@@ -231,8 +165,6 @@ abstract class Model extends EloquentModel
                 break;
         }
 
-        $this->saveCountAssociatedObject($relation_name, null);
-
         return $return;
     }
 
@@ -243,7 +175,7 @@ abstract class Model extends EloquentModel
      * @param \Illuminate\Database\Eloquent\Model $model
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function  addHasOneAssociatedObject(HasOne $relation, \Illuminate\Database\Eloquent\Model $model)
+    protected function addHasOneAssociatedObject(HasOne $relation, \Illuminate\Database\Eloquent\Model $model)
     {
         return $relation->save($model);
     }
@@ -255,7 +187,7 @@ abstract class Model extends EloquentModel
      * @param \Illuminate\Database\Eloquent\Model $model
      * @return bool
      */
-    protected function  addBelongsToAssociatedObject(BelongsTo $relation, \Illuminate\Database\Eloquent\Model $model)
+    protected function addBelongsToAssociatedObject(BelongsTo $relation, \Illuminate\Database\Eloquent\Model $model)
     {
         $relation->associate($model);
 
@@ -269,7 +201,7 @@ abstract class Model extends EloquentModel
      * @param \Illuminate\Support\Collection $objects
      * @return array|\Traversable
      */
-    protected function  addHasManyAssociatedObject(HasMany $relation, SupportCollection $objects)
+    protected function addHasManyAssociatedObject(HasMany $relation, SupportCollection $objects)
     {
         return $relation->saveMany($objects);
     }

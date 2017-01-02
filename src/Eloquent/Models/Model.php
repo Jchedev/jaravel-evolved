@@ -66,7 +66,28 @@ abstract class Model extends EloquentModel
     {
         return new Collection($models);
     }
-    
+
+    /**
+     * Add the nested aspect to the relation load check
+     *
+     * @param string $key
+     * @return bool
+     */
+    public function relationLoaded($key)
+    {
+        $test_nested_relation = explode('.', $key);
+
+        if (count($test_nested_relation) > 1) {
+            $relation = array_shift($test_nested_relation);
+
+            if (parent::relationLoaded($relation)) {
+                return $this->getRelation($relation)->relationLoaded(implode('.', $test_nested_relation));
+            }
+        }
+
+        return parent::relationLoaded($key);
+    }
+
     /**
      * Magic method allowing the use of associatedXXXX() to access relation object
      *
@@ -101,10 +122,6 @@ abstract class Model extends EloquentModel
 
         return parent::__call($method, $parameters);
     }
-
-    /*
-    * ------> Relation methods (add, get, remove) <-------
-    */
 
     /**
      * Get the object from a relation (based on $relation_name) or an empty object (if $return_empty_object = true)

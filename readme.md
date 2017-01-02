@@ -8,31 +8,37 @@ Note: The following examples are based on a system which has a model `User` (sql
 
 This class inherits directly from [Illuminate\Database\Eloquent\Model](https://laravel.com/api/5.3/Illuminate/Database/Eloquent/Model.html) but add some features, specifically about relations management.
 
-### Accessing relation values
+### Concepts
+
+#### Accessing relation values
 
 (todo...)
 
-### New Method (static) `table()`
+### New methods
+
+#### (static) `table()`
 
 (todo...)
 
-### New Method (static) `tableColumn($column)`
+#### (static) `tableColumn($column)`
 
 (todo...)
 
-### New Method `getTableColumn($column)`
+#### `getTableColumn($column)`
 
 (todo...)
 
-### Updated Method `newEloquentBuilder($query)`
+### Updated methods
+
+#### `newEloquentBuilder($query)`
 
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Builders\Builder` instead. If you decide to return your own builder model, you should make it inherits from `Jchedev\Laravel\Eloquent\Builders\Builder` first. 
 
-### Updated Method `newCollection(array $models = [])`
+#### `newCollection(array $models = [])`
 
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collections\Collection` instead. If you decide to return your own collection model, you should make it inherits from `Jchedev\Laravel\Eloquent\Collections\Collection` first. 
 
-### Updated Method `relationLoaded($relations)`
+#### `relationLoaded($relations)`
 
 This method overwrites the initial behavior of laravel but allows to check if nested relations are loaded `(Example: User.Posts.Comments`) where Laravel can't. 
 

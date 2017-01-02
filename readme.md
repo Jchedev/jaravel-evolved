@@ -17,15 +17,15 @@ This class inherits directly from [Illuminate\Database\Eloquent\Model](https://l
 
 ### New methods
 
-#### - _static_ table()
+- _static_ **table()**
 
 (todo...)
 
-#### - _static_ tableColumn($column)
+- _static_ **tableColumn($column)**
 
 (todo...)
 
-#### - getTableColumn($column)
+- **getTableColumn($column)**
 
 (todo...)
 

@@ -83,39 +83,45 @@ User::take(10)->countWithLimit() = 10
 ```
 
 - **forceFail()**
-Sometimes, we want to make sure that a query builder will returns 0 results. This method can be combined to `get()` or `count()` to do that. (Example: 
+
+Sometimes, we want to make sure that a query builder will returns 0 results. This method can be combined to `get()` or `count()` to do that. 
+```
+Example: 
+User::forceFail()->count() = 0
+User::forceFail()->get() = empty collection
+```
 
 - **randomize()**
 
 (todo...)
 
-#### - getModelTableColumn($column)
+- **getModelTableColumn($column)**
 
 (todo...)
 
 ### Override methods
 
-#### - setModel(Model $model)
+- **setModel(Model $model)**
 
 (todo...)
 
-#### - select($columns = ['*'])
+- **select($columns = ['*'])**
 
 (todo...)
 
-#### - where($column, $operator = null, $value = null, $boolean = 'and')
+- **where($column, $operator = null, $value = null, $boolean = 'and')**
 
 (todo...)
 
-#### - whereNull($column, $boolean = 'and', $not = false)
+- **whereNull($column, $boolean = 'and', $not = false)**
 
 (todo...)
 
-#### - whereIn($column, $values, $boolean = 'and', $not = false)
+- **whereIn($column, $values, $boolean = 'and', $not = false)**
 
 (todo...)
 
-#### - whereBetween($column, array $values, $boolean = 'and', $not = false)
+- **whereBetween($column, array $values, $boolean = 'and', $not = false)**
 
 
 

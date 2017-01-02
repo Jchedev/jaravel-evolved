@@ -17,7 +17,7 @@ This class inherits directly from [Illuminate\Database\Eloquent\Model](https://l
 
 ### New methods
 
-#### - (static) `table()`
+#### - _(static)_ table()
 
 (todo...)
 
@@ -41,7 +41,7 @@ This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collectio
 
 #### - `relationLoaded($relations)`
 
-This method overwrites the initial behavior of laravel but allows to check if nested relations are loaded `(Example: User.Posts.Comments`) where Laravel can't. 
+This method overwrites the initial behavior of laravel but allows to check if nested relations are loaded (Example: `User.Posts.Comments`) where Laravel can't. 
 
 
 
@@ -56,7 +56,7 @@ This class inherits directly from [Illuminate\Database\Eloquent\Collection](http
 
 ### New methods
 
-#### - `loadMissing($relations)`
+#### - loadMissing($relations)
 
 The `load($relations)` method will always load the requested `$relations` for **all** the items of the collection even if they are already loaded. `loadMissing()` only load the necessary ones.
 

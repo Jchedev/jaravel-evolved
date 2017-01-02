@@ -17,11 +17,11 @@ This class inherits directly from [Illuminate\Database\Eloquent\Model](https://l
 
 ### New methods
 
-#### - _(static)_ table()
+#### - _static_ table()
 
 (todo...)
 
-#### - _(static)_ tableColumn($column)
+#### - _static_ tableColumn($column)
 
 (todo...)
 
@@ -58,7 +58,7 @@ This class inherits directly from [Illuminate\Database\Eloquent\Collection](http
 
 #### - loadMissing($relations)
 
-The `load($relations)` method will always load the requested `$relations` for **all** the items of the collection even if they are already loaded. `loadMissing()` only load the necessary ones.
+The `load($relations)` method will always load the requested `$relations` for **all** the items of the collection even if they are already loaded. `loadMissing($relations)` only load the necessary ones.
 
 #### - builder()
 
@@ -82,40 +82,40 @@ User::take(10)->count() =  200
 User::take(10)->countWithLimit() = 10
 ```
 
-#### - `forceFail()`
+#### - forceFail()
 Sometimes, we want to make sure that a query builder will returns 0 results. This method can be combined to `get()` or `count()` to do that. (Example: 
 
-#### - `randomize()`
+#### - randomize()
 
 (todo...)
 
-#### - `getModelTableColumn($column)`
+#### - getModelTableColumn($column)
 
 (todo...)
 
 ### Override methods
 
-#### - `setModel(Model $model)`
+#### - setModel(Model $model)
 
 (todo...)
 
-#### - `select($columns = ['*'])`
+#### - select($columns = ['*'])
 
 (todo...)
 
-#### - `where($column, $operator = null, $value = null, $boolean = 'and')`
+#### - where($column, $operator = null, $value = null, $boolean = 'and')
 
 (todo...)
 
-#### - `whereNull($column, $boolean = 'and', $not = false)`
+#### - whereNull($column, $boolean = 'and', $not = false)
 
 (todo...)
 
-#### - `whereIn($column, $values, $boolean = 'and', $not = false)`
+#### - whereIn($column, $values, $boolean = 'and', $not = false)
 
 (todo...)
 
-#### - `whereBetween($column, array $values, $boolean = 'and', $not = false)`
+#### - whereBetween($column, array $values, $boolean = 'and', $not = false)
 
 
 

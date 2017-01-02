@@ -11,7 +11,7 @@ Note: The following examples are based on a system which has a model `User` (sql
 
 This class inherits directly from [Illuminate\Database\Eloquent\Model](https://laravel.com/api/5.3/Illuminate/Database/Eloquent/Model.html) but add some features, specifically about relations management.
 
-#### - Accessing relation values
+#### Accessing relation values
 
 (todo...)
 
@@ -31,15 +31,15 @@ This class inherits directly from [Illuminate\Database\Eloquent\Model](https://l
 
 ### Override methods
 
-#### - newEloquentBuilder($query)
+- **newEloquentBuilder($query)**
 
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Builders\Builder` instead. If you decide to return your own builder model, you should make it inherits from `Jchedev\Laravel\Eloquent\Builders\Builder` first. 
 
-#### - newCollection(array $models = [])
+- **newCollection(array $models = [])**
 
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collections\Collection` instead. If you decide to return your own collection model, you should make it inherits from `Jchedev\Laravel\Eloquent\Collections\Collection` first. 
 
-#### - relationLoaded($relations)
+- **relationLoaded($relations)**
 
 This method overwrites the initial behavior of laravel but allows to check if nested relations are loaded (Example: `User.Posts.Comments`) where Laravel can't. 
 
@@ -50,17 +50,17 @@ This method overwrites the initial behavior of laravel but allows to check if ne
 
 This class inherits directly from [Illuminate\Database\Eloquent\Collection](https://laravel.com/api/5.3/Illuminate/Database/Eloquent/Collection.html) but add new methods.
 
-#### - Using a scope method
+#### Using a scope method
 
 (todo...)
 
 ### New methods
 
-#### - loadMissing($relations)
+- **loadMissing($relations)**
 
 The `load($relations)` method will always load the requested `$relations` for **all** the items of the collection even if they are already loaded. `loadMissing($relations)` only load the necessary ones.
 
-#### - builder()
+- **builder()**
 
 Returns a builder targeting only the items of the collection (using `whereIn(primary_key, [...])`). This method expects all the items of the collection to be from the same Model (Mixing some "Users" to some "Comments" will create unwanted behavior).  
 
@@ -73,7 +73,7 @@ This class inherits directly from [Illuminate\Database\Eloquent\Builder](https:/
 
 ### New methods
 
-#### - countWithLimit($columns = '*')
+- **countWithLimit($columns = '*')**
 
 With the existing implementation of the `count()` method, the `limit` parameters is ignored. This method changes that. 
 ```
@@ -82,10 +82,10 @@ User::take(10)->count() =  200
 User::take(10)->countWithLimit() = 10
 ```
 
-#### - forceFail()
+- **forceFail()**
 Sometimes, we want to make sure that a query builder will returns 0 results. This method can be combined to `get()` or `count()` to do that. (Example: 
 
-#### - randomize()
+- **randomize()**
 
 (todo...)
 

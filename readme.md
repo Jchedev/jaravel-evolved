@@ -31,14 +31,14 @@ This class inherits directly from [Illuminate\Database\Eloquent\Model](https://l
 
 ### Override methods
 
-#### `newEloquentBuilder($query)`
+- #### `newEloquentBuilder($query)`
 
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Builders\Builder` instead. If you decide to return your own builder model, you should make it inherits from `Jchedev\Laravel\Eloquent\Builders\Builder` first. 
 
-#### `newCollection(array $models = [])`
+- #### `newCollection(array $models = [])`
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collections\Collection` instead. If you decide to return your own collection model, you should make it inherits from `Jchedev\Laravel\Eloquent\Collections\Collection` first. 
 
-#### `relationLoaded($relations)`
+- #### `relationLoaded($relations)`
 This method overwrites the initial behavior of laravel but allows to check if nested relations are loaded (Example: `User.Posts.Comments`) where Laravel can't. 
 
 

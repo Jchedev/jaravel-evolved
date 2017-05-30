@@ -74,7 +74,6 @@ This class inherits directly from [Illuminate\Database\Eloquent\Builder](https:/
 ### New methods
 
 - **`countWithLimit($columns = '*')`**
-
 With the existing implementation of the `count()` method, the `limit` parameters is ignored. This method changes that. 
 ```
 Example with a total of 200 users:
@@ -117,9 +116,9 @@ User::forceFail()->get() = empty collection
 
 (todo...)
 
-- **`whereIn($column, $values, $boolean = 'and', $not = false)**
+- **`whereIn($column, $values, $boolean = 'and', $not = false)`**
 
-(todo...)
+(todo...)`
 
 - **`whereIs($value, $boolean = 'and', $not = false)`**`
 

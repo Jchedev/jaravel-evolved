@@ -3,6 +3,7 @@
 namespace Jchedev\Laravel\Eloquent\Builders;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -79,6 +80,25 @@ class Builder extends EloquentBuilder
     public function whereIn($column, $values, $boolean = 'and', $not = false)
     {
         return parent::whereIn($this->getModelTableColumn($column), $values, $boolean, $not);
+    }
+
+    /**
+     * Add a new whereIs method to let the builder check against a model
+     *
+     * @param $value
+     * @param string $boolean
+     * @param bool $not
+     * @return mixed
+     */
+    public function whereIs($value, $boolean = 'and', $not = false)
+    {
+        if (is_a($value, Collection::class)) {
+            $value = $value->modelKeys();
+        } elseif (is_a($value, Model::class)) {
+            $value = $value->getKey();
+        }
+
+        return $this->whereIn($this->getModel()->getKeyName(), (array)$value, $boolean, $not);
     }
 
     /**

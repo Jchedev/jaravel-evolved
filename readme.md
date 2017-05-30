@@ -13,33 +13,33 @@ This class inherits directly from [Illuminate\Database\Eloquent\Model](https://l
 
 #### Accessing relation values
 
-(todo...)
+(todo: Describe the concept of associatedXXXX())
 
 ### New methods
 
-- _static_ **table()**
+- _static_ **`table()`**
 
 (todo...)
 
-- _static_ **tableColumn($column)**
+- _static_ **`tableColumn($column)`**
 
 (todo...)
 
-- **getTableColumn($column)**
+- **`getTableColumn($column)`**
 
 (todo...)
 
 ### Override methods
 
-- **newEloquentBuilder($query)**
+- **`newEloquentBuilder($query)`**
 
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Builders\Builder` instead. If you decide to return your own builder model, you should make it inherits from `Jchedev\Laravel\Eloquent\Builders\Builder` first. 
 
-- **newCollection(array $models = [])**
+- **`newCollection(array $models = [])`**
 
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collections\Collection` instead. If you decide to return your own collection model, you should make it inherits from `Jchedev\Laravel\Eloquent\Collections\Collection` first. 
 
-- **relationLoaded($relations)**
+- **`relationLoaded($relations)`**
 
 This method overwrites the initial behavior of laravel but allows to check if nested relations are loaded (Example: `User.Posts.Comments`) where Laravel can't. 
 
@@ -56,11 +56,11 @@ This class inherits directly from [Illuminate\Database\Eloquent\Collection](http
 
 ### New methods
 
-- **loadMissing($relations)**
+- **`loadMissing($relations)`**
 
 The `load($relations)` method will always load the requested `$relations` for **all** the items of the collection even if they are already loaded. `loadMissing($relations)` only load the necessary ones.
 
-- **builder()**
+- **`builder()`**
 
 Returns a builder targeting only the items of the collection (using `whereIn(primary_key, [...])`). This method expects all the items of the collection to be from the same Model (Mixing some "Users" to some "Comments" will create unwanted behavior).  
 
@@ -73,7 +73,7 @@ This class inherits directly from [Illuminate\Database\Eloquent\Builder](https:/
 
 ### New methods
 
-- **countWithLimit($columns = '*')**
+- **`countWithLimit($columns = '*')`**
 
 With the existing implementation of the `count()` method, the `limit` parameters is ignored. This method changes that. 
 ```
@@ -82,7 +82,7 @@ User::take(10)->count() =  200
 User::take(10)->countWithLimit() = 10
 ```
 
-- **forceFail()**
+- **`forceFail()`**
 
 Sometimes, we want to make sure that a query builder will returns 0 results. This method can be combined to `get()` or `count()` to do that. 
 ```
@@ -91,39 +91,43 @@ User::forceFail()->count() = 0
 User::forceFail()->get() = empty collection
 ```
 
-- **randomize()**
+- **`randomize()`**
 
 (todo...)
 
-- **getModelTableColumn($column)**
+- **`getModelTableColumn($column)`**
 
 (todo...)
 
 ### Override methods
 
-- **setModel(Model $model)**
+- **`setModel(Model $model)`**
 
 (todo...)
 
-- **select($columns = ['*'])**
+- **`select($columns = ['*'])`**
 
 (todo...)
 
-- **where($column, $operator = null, $value = null, $boolean = 'and')**
+- **`where($column, $operator = null, $value = null, $boolean = 'and')`**
 
 (todo...)
 
-- **whereNull($column, $boolean = 'and', $not = false)**
+- **`whereNull($column, $boolean = 'and', $not = false)`**
 
 (todo...)
 
-- **whereIn($column, $values, $boolean = 'and', $not = false)**
+- **`whereIn($column, $values, $boolean = 'and', $not = false)**
 
 (todo...)
 
-- **whereBetween($column, array $values, $boolean = 'and', $not = false)**
+- **`whereIs($value, $boolean = 'and', $not = false)`**`
 
+(todo...)
 
+- **`whereBetween($column, array $values, $boolean = 'and', $not = false)`**
+
+(todo...)
 
 
 

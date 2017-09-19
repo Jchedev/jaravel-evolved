@@ -2,10 +2,13 @@
 
 namespace Jchedev\Laravel\Console\Commands;
 
-use Symfony\Component\Console\Output\OutputInterface;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\DispatchesJobs;
 
 abstract class Command extends \Illuminate\Console\Command
 {
+    use DispatchesJobs;
+
     /**
      * Data used during the log (if activated)
      */
@@ -45,7 +48,6 @@ abstract class Command extends \Illuminate\Console\Command
     {
         /*
          * Step 1. Check if we should activate the queries log by looking at the option --with-sql
-         * -----------
          */
         if ($this->_count_queries == true || $this->option('with-sql') === true) {
             \DB::enableQueryLog();
@@ -55,20 +57,16 @@ abstract class Command extends \Illuminate\Console\Command
 
         $command_name = substr($this->signature, 0, strpos($this->signature, ' '));
 
-        $this->info('[*] Beginning of the command ' . $command_name, OutputInterface::VERBOSITY_VERBOSE);
+        $this->info('[*] Beginning of the command ' . $command_name, $this->parseVerbosity('v'));
+
 
         /*
          * Step 2. Execute the logic and catch exception to display as "error"
-         * -----------
          */
         $starting_time = microtime(true);
 
         try {
-            $return = $this->handleLogic();
-
-            if (is_array($return)) {
-                $this->_return = array_merge($this->_return, $return);
-            }
+            $this->handleLogic();
 
             $this->onSuccess();
         }
@@ -76,32 +74,40 @@ abstract class Command extends \Illuminate\Console\Command
             $this->onError($e);
         }
 
-        $this->_return['execution_time'] = round(microtime(true) - $starting_time, 2);
+        $end_time = microtime(true);
+
+        $this->_return['execution_time'] = round($end_time - $starting_time, 2);
 
         $this->onComplete();
 
-        $this->info('[*] End of the command', OutputInterface::VERBOSITY_VERBOSE);
+        $this->info('[*] End of the command', $this->parseVerbosity('v'));
 
-        $this->comment('- Execution time: ' . $this->_return['execution_time'], OutputInterface::VERBOSITY_VERBOSE, 1);
+        $this->comment('- Execution time: ' . $this->_return['execution_time'], $this->parseVerbosity('v'), 1);
 
         /*
          * Step 3. Count and display the queries (if activated)
-         * -----------
          */
         if ($this->_count_queries === true) {
             $queries = \DB::getQueryLog();
 
             $this->_return['nb_queries'] = count($queries);
 
-            $this->comment('- Queries: ' . $this->_return['nb_queries'], OutputInterface::VERBOSITY_VERBOSE, 1);
+            $this->comment('- Queries: ' . $this->_return['nb_queries'], $this->parseVerbosity('v'), 1);
 
-            // If we are in -vvv, then we want to know more about the queries executed
-            if ($this->getOutput()->getVerbosity() == OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            if ($this->output->getVerbosity() == $this->parseVerbosity('vv')) {
                 foreach ($queries as $query) {
-                    $this->comment('- ' . $query['query'], null, 1);
+                    $this->comment('-- ' . $query['query'] . ' (' . $query['time'] . ')', null, 1);
                 }
             }
+
             unset ($queries);
+        }
+
+        /*
+         * Step 4. Throw any caught error during the execution
+         */
+        if (isset($e)) {
+            throw $e;
         }
     }
 
@@ -110,7 +116,7 @@ abstract class Command extends \Illuminate\Console\Command
      *
      * @param \Exception $exception
      */
-    protected function  onError(\Exception $exception)
+    protected function onError(\Exception $exception)
     {
         $this->error('An error occurred: ' . $exception->getMessage());
 
@@ -120,7 +126,7 @@ abstract class Command extends \Illuminate\Console\Command
     /**
      * This method is called at the end of the execution (even if an error occurred)
      */
-    protected function  onComplete()
+    protected function onComplete()
     {
         // Can be overwritten by a child class
     }
@@ -128,7 +134,7 @@ abstract class Command extends \Illuminate\Console\Command
     /**
      * This method is called if the execution is successful
      */
-    protected function  onSuccess()
+    protected function onSuccess()
     {
         // Can be overwritten by a child class
     }
@@ -247,5 +253,20 @@ abstract class Command extends \Illuminate\Console\Command
     public function hasActiveProgressBar()
     {
         return !is_null($this->_active_progressbar);
+    }
+
+    /**
+     * Check if we want to execute a job now or defer it
+     *
+     * @param \Illuminate\Contracts\Queue\ShouldQueue $job
+     * @param bool $deferred
+     */
+    protected function handleJobOrDefer(ShouldQueue $job, $deferred = false)
+    {
+        if ($deferred === true) {
+            $this->dispatch($job);
+        } else {
+            $job->handle();
+        }
     }
 }

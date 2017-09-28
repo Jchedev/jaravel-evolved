@@ -29,39 +29,6 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
     }
 
     /**
-     * Load the relations only where it is missing, without deleting all the previous ones
-     *
-     * @param $relations
-     * @return $this
-     */
-    public function loadMissing($relations)
-    {
-        $items_without_relations = new \Illuminate\Database\Eloquent\Collection();
-
-        if (count($this->items) > 0) {
-            if (is_string($relations)) {
-                $relations = func_get_args();
-            }
-
-            foreach ($this->items as $item) {
-
-                // Check that the Item has all the relations loaded
-                foreach ($relations as $relation) {
-                    if ($item->relationLoaded($relation) === false) {
-                        $items_without_relations->push($item);
-                        break;
-                    }
-                }
-            }
-
-            // Load missing relations
-            $items_without_relations->load($relations);
-        }
-
-        return $this;
-    }
-
-    /**
      * Generate a builder with all the ID of the collections
      *
      * @return null

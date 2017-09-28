@@ -116,30 +116,6 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * Sort the results in a randomized order
-     *
-     * @return $this
-     */
-    public function randomize()
-    {
-        $this->orderBy(DB::raw('RAND()'));
-
-        return $this;
-    }
-
-    /**
-     * Could sounds weird but sometimes we want to make sure that the builder will return nothing
-     *
-     * @return $this
-     */
-    public function forceFail()
-    {
-        $this->where(DB::raw('1 = 2'));
-
-        return $this;
-    }
-
-    /**
      * This count keeps in mind the limit applied to the query
      *
      * @param string $columns

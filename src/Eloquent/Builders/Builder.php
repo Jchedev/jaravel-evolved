@@ -132,43 +132,6 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * @param $range
-     * @param string $date_column
-     * @param string $key
-     * @return static
-     */
-    public function groupByRanges($range, $date_column = 'created_at', $key = 'groupement')
-    {
-        $nb_seconds = time_duration($range);
-
-        $this->select(DB::raw('MAX(id) as id'));
-
-        $this->addSelect(DB::raw("concat(date(" . $date_column . ") , ' ', sec_to_time(time_to_sec(" . $date_column . ")- time_to_sec(" . $date_column . ") % (" . $nb_seconds . ") + (" . $nb_seconds . "))) as " . $key));
-
-        $this->groupBy($key);
-
-        $this->orderBy($key, 'DESC');
-
-        $results = $this->get()->reverse();
-
-        $real_collection = self::query()->whereIn('id', $results->modelKeys())->get()->keyBy('id');
-
-        foreach ($results as $result) {
-            $final_attributes = array_merge(
-                $real_collection[$result->id]->attributes,
-                $result->attributes,
-                [
-                    $key => Carbon::parse($result->$key)
-                ]
-            );
-
-            $result->fill($final_attributes)->syncOriginal();
-        }
-
-        return $results;
-    }
-
-    /**
      * Call the helper available in the package to generates the name of the column with the table name attached
      *
      * @param $column

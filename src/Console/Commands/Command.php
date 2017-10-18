@@ -59,7 +59,6 @@ abstract class Command extends \Illuminate\Console\Command
 
         $this->info('[*] Beginning of the command ' . $command_name, $this->parseVerbosity('v'));
 
-
         /*
          * Step 2. Execute the logic and catch exception to display as "error"
          */

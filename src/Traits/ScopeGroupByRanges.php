@@ -16,21 +16,19 @@ trait ScopeGroupByRanges
     /**
      * @param $query
      * @param $range
-     * @param null $limit
+     * @param string $date_column
      * @param string $key
      * @return mixed
      */
-    public function scopeGroupByRanges($query, $range, $limit = null, $key = 'groupement')
+    public function scopeGroupByRanges($query, $range, $date_column = 'created_at', $key = 'groupement')
     {
         $nb_seconds = time_duration($range);
 
         $query->select(DB::raw('MAX(id) as id'));
 
-        $query->addSelect(DB::raw("concat(date(created_at) , ' ', sec_to_time(time_to_sec(created_at)- time_to_sec(created_at) % (" . $nb_seconds . ") + (" . $nb_seconds . "))) as " . $key));
+        $query->addSelect(DB::raw("concat(date(" . $date_column . ") , ' ', sec_to_time(time_to_sec(" . $date_column . ")- time_to_sec(" . $date_column . ") % (" . $nb_seconds . ") + (" . $nb_seconds . "))) as " . $key));
 
         $query->groupBy($key);
-
-        $query->take($limit);
 
         $query->orderBy($key, 'DESC');
 

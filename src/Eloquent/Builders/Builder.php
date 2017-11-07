@@ -2,29 +2,12 @@
 
 namespace Jchedev\Laravel\Eloquent\Builders;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 class Builder extends EloquentBuilder
 {
-    /**
-     * We automatically select all columns for the model to simplify some logic around select/addSelect
-     *
-     * @param \Illuminate\Database\Eloquent\Model $model
-     * @return $this
-     */
-    public function setModel(Model $model)
-    {
-        parent::setModel($model);
-
-        $this->select('*');
-
-        return $this;
-    }
-
     /**
      * Attach the name of the table to each column of the select if possible
      *
@@ -40,6 +23,20 @@ class Builder extends EloquentBuilder
         }
 
         return parent::select($columns);
+    }
+
+    /**
+     * @param array|mixed $column
+     * @param bool $add_select_all
+     * @return $this
+     */
+    public function addSelect($column, $add_select_all = true)
+    {
+        if ($add_select_all && count($this->getQuery()->columns) == 0) {
+            $this->select();
+        }
+
+        return parent::addSelect($column);
     }
 
     /**
@@ -140,5 +137,71 @@ class Builder extends EloquentBuilder
     public function getModelTableColumn($column)
     {
         return table_column($this->getModel()->getTable(), $column);
+    }
+
+    /**
+     * @param $relation_name
+     * @param $fields
+     * @return $this
+     */
+    public function addSelectOnRelation($relation_name, $fields)
+    {
+        $query = $this->getQueryRelation($relation_name);
+
+        $this->joinOnRelation($relation_name, 'left');
+
+        foreach ($fields as $key => $value) {
+
+            if (is_a($value, Expression::class)) {
+                $raw = $value;
+            } else {
+                $as = !is_int($key) ? $value : (str_replace('.', '_', $relation_name) . '_' . $value);
+
+                $column = $query->from . '.' . (!is_int($key) ? $key : $value);
+
+                $raw = DB::raw($column . ' as ' . $as);
+            }
+
+            $this->addSelect($raw);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param $relation_name
+     * @param string $type
+     * @return $this
+     */
+    public function joinOnRelation($relation_name, $type = 'inner')
+    {
+        $query = $this->getQueryRelation($relation_name);
+
+        $constraints = $query->wheres;
+
+        $bindings = $query->bindings['where'];
+
+        return $this->join($query->from, function (JoinClause $join) use ($constraints, $bindings) {
+
+            $join->wheres = array_merge($join->wheres, $constraints);
+
+            $join->addBinding($bindings);
+
+        }, null, null, $type);
+    }
+
+    /**
+     * @param $relation_name
+     * @return \Illuminate\Database\Query\Builder
+     */
+    private function getQueryRelation($relation_name)
+    {
+        $clean_builder = $this->getModel()->newQuery();
+
+        $clean_builder->has($relation_name);
+
+        $has_wheres = $clean_builder->getQuery()->wheres;
+
+        return $has_wheres[0]['query'];
     }
 }

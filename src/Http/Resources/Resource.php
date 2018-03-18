@@ -43,7 +43,7 @@ class Resource extends \Illuminate\Http\Resources\Json\Resource
      */
     static function collection($resource, $with_auto_load = true)
     {
-        if ($with_auto_load === true) {
+        if ($with_auto_load === true && $resource instanceof \Jchedev\Laravel\Eloquent\Collections\Collection) {
             $resource->loadMissing(static::relationstoLoad());
         }
 

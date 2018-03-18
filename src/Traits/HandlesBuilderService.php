@@ -33,6 +33,18 @@ trait HandlesBuilderService
 
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
+     * @param null $modifiers
+     * @return int
+     */
+    public function countFromService(BuilderService $service, $modifiers = null)
+    {
+        $modifiers = $this->makeModifiers($modifiers);
+
+        return $service->count($modifiers);
+    }
+
+    /**
+     * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
      * @param $id
      * @param null $modifiers
      * @return \Illuminate\Database\Eloquent\Model|null|static
@@ -48,7 +60,7 @@ trait HandlesBuilderService
      * @param null $data
      * @return \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null
      */
-    protected function makeModifiers($data = null)
+    public function makeModifiers($data = null)
     {
         if (is_null($data) || $data instanceof Modifiers) {
             return $data;

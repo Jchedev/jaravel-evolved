@@ -13,16 +13,6 @@ class Collection extends ResourceCollection
     public $allow_eloquent_collection = true;
 
     /**
-     * ResourceCollection constructor.
-     *
-     * @param mixed $resource
-     */
-    public function __construct($resource)
-    {
-        parent::__construct($resource);
-    }
-
-    /**
      * @param mixed $resource
      * @return mixed
      */

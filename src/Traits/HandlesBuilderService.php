@@ -8,6 +8,7 @@
 
 namespace Jchedev\Laravel\Traits;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Jchedev\Laravel\Classes\BuilderServices\BuilderService;
 use Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers;
@@ -57,6 +58,23 @@ trait HandlesBuilderService
     }
 
     /**
+     * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
+     * @param $id
+     * @param null $modifiers
+     * @return \Illuminate\Database\Eloquent\Model|null|static
+     */
+    public function findOrFailFromService(BuilderService $service, $id, $modifiers = null)
+    {
+        $item = $this->findFromService($service, $id, $modifiers);
+
+        if (is_null($item)) {
+            throw new ModelNotFoundException();
+        }
+
+        return $item;
+    }
+
+    /**
      * @param null $data
      * @return \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null
      */
@@ -80,4 +98,19 @@ trait HandlesBuilderService
 
         return new Modifiers($inputs);
     }
+
+    /*
+        EXAMPLE where we use the "request() + set params" by default
+
+        protected function makeModifiers($data = null)
+       {
+            if (is_null($data) || is_array($data)) {
+                $data_from_request = request()->all();
+
+                $data = array_replace_recursive($data_from_request, is_array($data) ? $data : []);
+            }
+
+            return $this->traitMakeModifiers($data);
+        }
+     */
 }

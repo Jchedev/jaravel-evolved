@@ -132,6 +132,33 @@ class Builder extends EloquentBuilder
     }
 
     /**
+     * @param $count
+     * @param callable $callback
+     * @param null $limit
+     * @return bool
+     */
+    public function chunkWithLimit($count, callable $callback, $limit = null)
+    {
+        $total = 0;
+
+        if (!is_null($limit) && $limit < $count) {
+            $count = $limit;
+        }
+
+        $this->chunk($count, function ($elements) use ($callback, &$total, $limit) {
+            $callback($elements);
+
+            $total += count($elements);
+
+            if (!is_null($limit) && $total >= $limit) {
+                return false;
+            }
+        });
+
+        return true;
+    }
+
+    /**
      * Call the helper available in the package to generates the name of the column with the table name attached
      *
      * @param $column

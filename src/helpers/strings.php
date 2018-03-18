@@ -81,9 +81,29 @@ function    time_multiplier($from, $to)
     }
 
     $multipliers = [
-        'second' => ['minute' => (1 / 60), 'hour' => (1 / 60 / 60)],
-        'minute' => ['second' => 60, 'hour' => (1 / 60)],
-        'hour'   => ['second' => 60 * 60, 'minute' => 60]
+        'second' => [
+            'minute' => (1 / 60),
+            'hour'   => (1 / 60 / 60)
+        ],
+        'minute' => [
+            'second' => 60,
+            'hour'   => (1 / 60)
+        ],
+        'hour'   => [
+            'second' => 60 * 60,
+            'minute' => 60
+        ],
+        'day'    => [
+            'second' => 60 * 60 * 24,
+            'minute' => 60 * 24,
+            'hour'   => 24
+        ],
+        'week'   => [
+            'second' => 60 * 60 * 24 * 7,
+            'minute' => 60 * 24 * 7,
+            'hour'   => 24 * 7,
+            'day'    => 7
+        ]
     ];
 
     return array_get($multipliers, $from . '.' . $to, false);

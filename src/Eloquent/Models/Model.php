@@ -68,6 +68,23 @@ abstract class Model extends EloquentModel
     }
 
     /**
+     * @param array|string $relations
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function loadMissing($relations)
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+
+        foreach ($relations as $key => $relation) {
+            if ($this->relationLoaded($relation) === true) {
+                unset ($relations[$key]);
+            }
+        }
+
+        return parent::loadMissing($relations);
+    }
+
+    /**
      * Add the nested aspect to the relation load check
      *
      * @param string $key
@@ -81,8 +98,20 @@ abstract class Model extends EloquentModel
             $relation = array_shift($test_nested_relation);
 
             if (parent::relationLoaded($relation)) {
-                return $this->getRelation($relation)->relationLoaded(implode('.', $test_nested_relation));
+                $relation = $this->getRelation($relation);
+
+                if (is_a($relation, Collection::class)) {
+                    $relation = $relation->first();
+                }
+
+                if (is_null($relation)) {
+                    return true;
+                }
+
+                return $relation->relationLoaded(implode('.', $test_nested_relation));
             }
+
+            return false;
         }
 
         return parent::relationLoaded($key);

@@ -22,6 +22,41 @@ class Modifiers
     private $limit;
 
     /**
+     * Modifiers constructor.
+     *
+     * @param array $params
+     */
+    public function __construct(array $params = [])
+    {
+        $this->set($params);
+    }
+
+    /**
+     * @param array $params
+     * @return $this
+     */
+    public function set(array $params)
+    {
+        foreach ($params as $key => $value) {
+            switch ($key) {
+                case 'offset':
+                    $this->offset($value);
+                    break;
+                case 'limit':
+                    $this->limit($value);
+                    break;
+                case 'filters':
+                    if (is_array($value)) {
+                        $this->filters($value);
+                    }
+                    break;
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * @param null $offset
      * @return $this
      */

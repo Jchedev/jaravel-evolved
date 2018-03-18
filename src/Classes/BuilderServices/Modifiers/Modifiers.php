@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Classes\BuilderServices\Modifiers;
+namespace Jchedev\Laravel\Classes\BuilderServices\Modifiers;
 
 use Illuminate\Database\Eloquent\Builder;
 

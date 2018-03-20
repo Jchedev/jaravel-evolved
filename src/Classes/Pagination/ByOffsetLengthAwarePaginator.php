@@ -17,4 +17,25 @@ class ByOffsetLengthAwarePaginator extends LengthAwarePaginator
             'next_offset' => ($next_offset = ($this->currentPage() + $this->count())) >= $this->total() ? null : $next_offset
         ];
     }
+
+    /**
+     * @param int $currentPage
+     * @param string $pageName
+     * @return int
+     */
+    protected function setCurrentPage($currentPage, $pageName)
+    {
+        $currentPage = !is_null($currentPage) ? $currentPage : static::resolveCurrentPage($pageName);
+
+        return $this->isValidPageNumber($currentPage) ? (int) $currentPage : 1;
+    }
+
+    /**
+     * @param int $page
+     * @return bool
+     */
+    protected function isValidPageNumber($page)
+    {
+        return $page >= 0 && filter_var($page, FILTER_VALIDATE_INT) !== false;
+    }
 }

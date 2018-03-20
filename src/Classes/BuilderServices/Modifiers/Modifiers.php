@@ -61,7 +61,7 @@ class Modifiers
      */
     public function getOffset()
     {
-        return $this->offset;
+        return $this->offset ?: 0;
     }
 
     /**

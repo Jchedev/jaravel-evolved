@@ -1,6 +1,6 @@
 <?php
 
-namespace Jchedev\LaravelClasses;
+namespace Jchedev\Laravel\Classes\Pagination;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 

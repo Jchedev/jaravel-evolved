@@ -4,7 +4,7 @@ namespace Jchedev\Laravel\Classes\BuilderServices;
 
 use Illuminate\Database\Eloquent\Builder;
 use Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers;
-use Jchedev\LaravelClasses\ByOffsetLengthAwarePaginator;
+use Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator;
 
 abstract class BuilderService
 {
@@ -58,7 +58,7 @@ abstract class BuilderService
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
      * @param array $columns
-     * @return \Jchedev\LaravelClasses\ByOffsetLengthAwarePaginator
+     * @return \Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator
      */
     public function paginate(Modifiers $modifiers = null, $columns = ['*'])
     {

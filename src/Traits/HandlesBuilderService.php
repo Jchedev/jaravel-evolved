@@ -31,7 +31,7 @@ trait HandlesBuilderService
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
      * @param null $modifiers
-     * @return \Jchedev\LaravelClasses\ByOffsetLengthAwarePaginator
+     * @return \Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator
      */
     public function paginateFromService(BuilderService $service, $modifiers = null)
     {

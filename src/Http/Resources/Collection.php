@@ -3,7 +3,6 @@
 namespace Jchedev\Laravel\Http\Resources;
 
 use \Illuminate\Http\Resources\Json\ResourceCollection;
-use Illuminate\Pagination\AbstractPaginator;
 
 class Collection extends ResourceCollection
 {
@@ -21,8 +20,7 @@ class Collection extends ResourceCollection
         if ($this->allow_eloquent_collection === true && $resource instanceof \Illuminate\Database\Eloquent\Collection) {
             $this->collection = $resource;
 
-            // This line is copied from Illuminate\Http\Resources\CollectResources
-            return $resource instanceof AbstractPaginator ? $resource->setCollection($this->collection) : $this->collection;
+            return $this->collection;
         }
 
         return parent::collectResource($resource);

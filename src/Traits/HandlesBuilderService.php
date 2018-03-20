@@ -16,10 +16,6 @@ use Jchedev\Laravel\Exceptions\UnexpectedClassException;
 
 trait HandlesBuilderService
 {
-    protected $limit_max = null;
-
-    protected $limit_default = null;
-
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
      * @param null $modifiers
@@ -92,8 +88,8 @@ trait HandlesBuilderService
             throw new UnexpectedClassException($data, [Modifiers::class, Request::class, []]);
         }
 
-        if (is_null($limit = array_get($inputs, 'limit')) || (!is_null($this->limit_max) && $limit > $this->limit_max)) {
-            $inputs['limit'] = $this->limit_default;
+        if (is_null($limit = array_get($inputs, 'limit')) || (property_exists($this, 'limit_max') && !is_null($this->limit_max) && (int)$limit > $this->limit_max)) {
+            $inputs['limit'] = property_exists($this, 'limit_default') ? $this->limit_default : null;
         }
 
         return new Modifiers($inputs);

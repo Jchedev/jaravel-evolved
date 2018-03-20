@@ -46,52 +46,60 @@ abstract class Command extends \Illuminate\Console\Command
      */
     public function handle()
     {
-        /*
-         * Step 1. Check if we should activate the queries log by looking at the option --with-sql
-         */
+        //Check if we should activate the queries log by looking at the option --with-sql
+
         if ($this->_count_queries == true || $this->option('with-sql') === true) {
             \DB::enableQueryLog();
 
             $this->_count_queries = true;
         }
 
+        // Info about the command execution
+
         $command_name = substr($this->signature, 0, strpos($this->signature, ' '));
 
         $this->info('[*] Beginning of the command ' . $command_name, $this->parseVerbosity('v'));
 
-        /*
-         * Step 2. Execute the logic and catch exception to display as "error"
-         */
+        // Execute the logic and catch exception to display as "error"
+
         $starting_time = microtime(true);
 
         try {
+            // That's where we handle the logic and the full command
             $this->handleLogic();
 
+            // Callback called because the command was a success
             $this->onSuccess();
         }
         catch (\Exception $e) {
-            $this->onError($e);
+            // Callback called because an error occurred during the execution
+            if ($this->onError($e) === false) {
+                unset($e);
+            }
         }
+
+        $this->onComplete();
+
+        // Log execution time and output info about the execution results
+
+        $this->info('[*] End of the command', $this->parseVerbosity('v'));
 
         $end_time = microtime(true);
 
         $this->_return['execution_time'] = round($end_time - $starting_time, 2);
 
-        $this->onComplete();
-
-        $this->info('[*] End of the command', $this->parseVerbosity('v'));
-
         $this->comment('- Execution time: ' . $this->_return['execution_time'], $this->parseVerbosity('v'), 1);
 
-        /*
-         * Step 3. Count and display the queries (if activated)
-         */
+        // Count and display the queries (if activated)
+
         if ($this->_count_queries === true) {
             $queries = \DB::getQueryLog();
 
             $this->_return['nb_queries'] = count($queries);
 
             $this->comment('- Queries: ' . $this->_return['nb_queries'], $this->parseVerbosity('v'), 1);
+
+            // If the verbosity is right, we output all the queries executed
 
             if ($this->output->getVerbosity() == $this->parseVerbosity('vv')) {
                 foreach ($queries as $query) {
@@ -102,9 +110,8 @@ abstract class Command extends \Illuminate\Console\Command
             unset ($queries);
         }
 
-        /*
-         * Step 4. Throw any caught error during the execution
-         */
+        // Throw any caught error during the execution
+
         if (isset($e)) {
             throw $e;
         }

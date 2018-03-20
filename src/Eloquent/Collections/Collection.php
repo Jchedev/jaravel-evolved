@@ -18,6 +18,7 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
         if (!is_null($first_element)) {
 
             // Try to apply a Scope Method on a builder representing the collection
+
             $scope_method = 'scope' . ucfirst($method);
 
             if (method_exists($first_element, $scope_method)) {
@@ -46,6 +47,7 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
             foreach ($this->items as $item) {
 
                 // Check that the Item has all the relations loaded
+
                 foreach ($relations as $relation) {
                     if ($item->relationLoaded($relation) === false) {
                         $items_without_relations->push($item);
@@ -55,6 +57,7 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
             }
 
             // Load missing relations
+
             $items_without_relations->load($relations);
         }
 

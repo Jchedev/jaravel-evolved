@@ -15,7 +15,7 @@ abstract class BuilderService
     /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    abstract function builder(): Builder;
+    abstract function builder();
 
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers

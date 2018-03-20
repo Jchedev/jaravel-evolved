@@ -37,13 +37,12 @@ class Resource extends \Illuminate\Http\Resources\Json\Resource
     }
 
     /**
-     * @param mixed $resource
-     * @param bool $with_auto_load
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     * @param $resource
+     * @return mixed
      */
-    static function collection($resource, $with_auto_load = true)
+    static function collectionWithAutoLoad($resource)
     {
-        if ($with_auto_load === true && $resource instanceof \Jchedev\Laravel\Eloquent\Collections\Collection) {
+        if ($resource instanceof \Jchedev\Laravel\Eloquent\Collections\Collection) {
             $resource->loadMissing(static::relationstoLoad());
         }
 

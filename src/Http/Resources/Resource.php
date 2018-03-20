@@ -40,7 +40,7 @@ class Resource extends \Illuminate\Http\Resources\Json\Resource
      * @param $resource
      * @return mixed
      */
-    static function collectionWithAutoLoad($resource)
+    static function collectionWithLoad($resource)
     {
         if ($resource instanceof \Jchedev\Laravel\Eloquent\Collections\Collection) {
             $resource->loadMissing(static::relationstoLoad());

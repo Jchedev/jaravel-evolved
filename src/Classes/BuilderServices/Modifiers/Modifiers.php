@@ -57,6 +57,14 @@ class Modifiers
     }
 
     /**
+     * @return int
+     */
+    public function getOffset()
+    {
+        return $this->offset;
+    }
+
+    /**
      * @param null $offset
      * @return $this
      */
@@ -68,6 +76,14 @@ class Modifiers
     }
 
     /**
+     * @return int
+     */
+    public function getLimit()
+    {
+        return $this->limit;
+    }
+
+    /**
      * @param null $limit
      * @return $this
      */
@@ -76,6 +92,14 @@ class Modifiers
         $this->limit = $limit;
 
         return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getFilters()
+    {
+        return $this->filters;
     }
 
     /**

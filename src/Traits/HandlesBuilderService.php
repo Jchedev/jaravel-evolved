@@ -18,6 +18,16 @@ trait HandlesBuilderService
 {
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
+     * @param array $data
+     * @return mixed
+     */
+    public function createFromService(BuilderService $service, array $data = [])
+    {
+        return $service->create($data);
+    }
+
+    /**
+     * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
      * @param null $modifiers
      * @return \Illuminate\Database\Eloquent\Collection|static[]
      */

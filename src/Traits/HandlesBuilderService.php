@@ -47,6 +47,14 @@ trait HandlesBuilderService
     {
         $modifiers = $this->makeModifiers($modifiers);
 
+        $modifiers = $modifiers ?: new Modifiers();
+
+        $default_limit = property_exists($this, 'pagination_limit_min') ? $this->pagination_limit_min : null;
+
+        if (is_null($limit = $modifiers->getLimit()) || (isset($this->pagination_limit_max) && $this->pagination_limit_max < $limit)) {
+            $modifiers->limit($default_limit);
+        }
+
         return $service->paginate($modifiers);
     }
 
@@ -108,10 +116,6 @@ trait HandlesBuilderService
             $inputs = $data;
         } else {
             throw new UnexpectedClassException($data, [Modifiers::class, Request::class, []]);
-        }
-
-        if (is_null($limit = array_get($inputs, 'limit')) || (property_exists($this, 'limit_max') && !is_null($this->limit_max) && (int)$limit > $this->limit_max)) {
-            $inputs['limit'] = property_exists($this, 'limit_default') ? $this->limit_default : null;
         }
 
         return new Modifiers($inputs);

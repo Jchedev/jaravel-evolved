@@ -27,7 +27,7 @@ class ByOffsetLengthAwarePaginator extends LengthAwarePaginator
     {
         $currentPage = !is_null($currentPage) ? $currentPage : static::resolveCurrentPage($pageName);
 
-        return $this->isValidPageNumber($currentPage) ? (int) $currentPage : 1;
+        return $this->isValidPageNumber($currentPage) ? (int)$currentPage : 1;
     }
 
     /**

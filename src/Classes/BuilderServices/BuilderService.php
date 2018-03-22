@@ -107,13 +107,11 @@ abstract class BuilderService
     {
         $modifiers = $modifiers ?: new Modifiers();
 
-        if (is_null($limit = $modifiers->getLimit())) {
-            $modifiers->limit($limit = $per_page);
-        }
+        $limit = !is_null($limit = $modifiers->getLimit()) ? (int)$limit : $per_page;
 
-        $offset = !is_null($modifiers) ? $modifiers->getOffset() : 0;
+        $offset = !is_null($offset = $modifiers->getOffset()) ? (int)$offset : 0;
 
-        $builder = $this->modifiedBuilder($modifiers);
+        $builder = $this->modifiedBuilder($modifiers->limit($limit)->offset($offset));
 
         $total = $builder->toBase()->getCountForPagination();
 

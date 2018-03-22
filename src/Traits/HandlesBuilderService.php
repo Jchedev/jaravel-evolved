@@ -116,19 +116,4 @@ trait HandlesBuilderService
 
         return new Modifiers($inputs);
     }
-
-    /*
-        EXAMPLE where we use the "request() + set params" by default
-
-        protected function makeModifiers($data = null)
-       {
-            if (is_null($data) || is_array($data)) {
-                $data_from_request = request()->all();
-
-                $data = array_replace_recursive($data_from_request, is_array($data) ? $data : []);
-            }
-
-            return $this->traitMakeModifiers($data);
-        }
-     */
 }

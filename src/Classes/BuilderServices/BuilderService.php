@@ -99,20 +99,25 @@ abstract class BuilderService
 
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
+     * @param int $per_page
      * @param array $columns
      * @return \Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator
      */
-    public function paginate(Modifiers $modifiers = null, $columns = ['*'])
+    public function paginate(Modifiers $modifiers = null, $per_page = 15, $columns = ['*'])
     {
+        $modifiers = $modifiers ?: new Modifiers();
+
+        if (is_null($limit = $modifiers->getLimit())) {
+            $modifiers->limit($limit = $per_page);
+        }
+
+        $offset = !is_null($modifiers) ? $modifiers->getOffset() : 0;
+
         $builder = $this->modifiedBuilder($modifiers);
 
         $total = $builder->toBase()->getCountForPagination();
 
         $items = ($total != 0 ? $builder->get($columns) : $builder->getModel()->newCollection());
-
-        $limit = !is_null($modifiers) ? $modifiers->getLimit() : null;
-
-        $offset = !is_null($modifiers) ? $modifiers->getOffset() : 0;
 
         return new ByOffsetLengthAwarePaginator($items, $total, $limit, $offset);
     }

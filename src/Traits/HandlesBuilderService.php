@@ -49,7 +49,7 @@ trait HandlesBuilderService
 
         $modifiers = $modifiers ?: new Modifiers();
 
-        $default_limit = property_exists($this, 'pagination_limit_min') ? $this->pagination_limit_min : null;
+        $default_limit = property_exists($this, 'pagination_limit_default') ? $this->pagination_limit_default : null;
 
         if (is_null($limit = $modifiers->getLimit()) || (isset($this->pagination_limit_max) && $this->pagination_limit_max < $limit)) {
             $modifiers->limit($default_limit);

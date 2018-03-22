@@ -4,6 +4,7 @@ namespace Jchedev\Laravel\Traits;
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -43,6 +44,10 @@ trait HandlesExceptions
         } elseif ($exception instanceof ValidationException) {
             // Status Code: 400
             $status_code = HttpResponse::HTTP_BAD_REQUEST;
+
+        } elseif ($exception instanceof ModelNotFoundException) {
+            // Status Code: 404
+            $status_code = HttpResponse::HTTP_NOT_FOUND;
 
         } elseif ($exception instanceof HttpException) {
             // Status Code: Exception Status

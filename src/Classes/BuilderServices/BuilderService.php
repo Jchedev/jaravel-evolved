@@ -5,6 +5,7 @@ namespace Jchedev\Laravel\Classes\BuilderServices;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
 use Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers;
+use Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator;
 
 abstract class BuilderService
 {
@@ -94,6 +95,26 @@ abstract class BuilderService
         $builder = $this->modifiedBuilder($modifiers);
 
         return $builder->get($columns);
+    }
+
+    /**
+     * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
+     * @param array $columns
+     * @return \Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator
+     */
+    public function paginate(Modifiers $modifiers = null, $columns = ['*'])
+    {
+        $builder = $this->modifiedBuilder($modifiers);
+
+        $total = $builder->toBase()->getCountForPagination();
+
+        $items = ($total != 0 ? $builder->get($columns) : $builder->getModel()->newCollection());
+
+        $limit = !is_null($modifiers) ? $modifiers->getLimit() : null;
+
+        $offset = !is_null($modifiers) ? $modifiers->getOffset() : 0;
+
+        return new ByOffsetLengthAwarePaginator($items, $total, $limit, $offset);
     }
 
     /**

@@ -45,11 +45,7 @@ abstract class BuilderService
      */
     public function create(array $data)
     {
-        $validator = $this->validatorForCreate($data);
-
-        $validator->validate();
-
-        $validated_data = array_only($validator->valid(), array_keys($this->validationRulesForCreate()));
+        $validated_data = $this->validatorForCreate($data)->validate();
 
         return $this->onCreate($validated_data);
     }

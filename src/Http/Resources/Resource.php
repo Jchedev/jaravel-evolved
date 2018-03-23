@@ -15,6 +15,21 @@ class Resource extends \Illuminate\Http\Resources\Json\Resource
     static $always_load = [];
 
     /**
+     * Transform the resource into an array.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
+    public function toArray($request)
+    {
+        if (is_array($this->resource)) {
+            return $this->resource;
+        }
+
+        return parent::toArray($request);
+    }
+
+    /**
      * @param $id
      * @param array $attributes
      * @return array

@@ -73,25 +73,27 @@ trait HandlesBuilderService
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
      * @param $id
+     * @param null $key
      * @param null $modifiers
      * @return \Illuminate\Database\Eloquent\Model|null|static
      */
-    public function findFromService(BuilderService $service, $id, $modifiers = null)
+    public function findFromService(BuilderService $service, $id, $key = null, $modifiers = null)
     {
         $modifiers = $this->makeModifiers($modifiers);
 
-        return $service->find($id, $modifiers);
+        return $service->find($id, $key, $modifiers);
     }
 
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\BuilderService $service
      * @param $id
+     * @param null $key
      * @param null $modifiers
      * @return \Illuminate\Database\Eloquent\Model|null|static
      */
-    public function findOrFailFromService(BuilderService $service, $id, $modifiers = null)
+    public function findOrFailFromService(BuilderService $service, $id, $key = null, $modifiers = null)
     {
-        $item = $this->findFromService($service, $id, $modifiers);
+        $item = $this->findFromService($service, $id, $key, $modifiers);
 
         if (is_null($item)) {
             throw new ModelNotFoundException();

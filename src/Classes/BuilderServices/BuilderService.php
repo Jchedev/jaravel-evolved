@@ -10,11 +10,6 @@ use Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator;
 abstract class BuilderService
 {
     /**
-     * @var
-     */
-    public $identifier_key;
-
-    /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
     abstract function builder();
@@ -134,15 +129,18 @@ abstract class BuilderService
 
     /**
      * @param $id
+     * @param null $key
      * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
      * @param array $columns
      * @return \Illuminate\Database\Eloquent\Model|null|static
      */
-    public function find($id, Modifiers $modifiers = null, $columns = ['*'])
+    public function find($id, $key = null, Modifiers $modifiers = null, $columns = ['*'])
     {
         $builder = $this->modifiedBuilder($modifiers);
 
-        $builder->where($this->identifierKey(), '=', $id);
+        $key = $key ?: $builder->getModel()->getKeyName();
+
+        $builder->where($key, '=', $id);
 
         return $builder->first($columns);
     }
@@ -180,17 +178,5 @@ abstract class BuilderService
         $builder = $this->modifiedBuilder($modifiers);
 
         return $builder->toSql();
-    }
-
-    /**
-     * @return string
-     */
-    public function identifierKey()
-    {
-        if (!is_null($this->identifier_key)) {
-            return $this->identifier_key;
-        }
-
-        return $this->builder()->getModel()->getKeyName();
     }
 }

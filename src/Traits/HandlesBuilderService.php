@@ -9,7 +9,6 @@
 namespace Jchedev\Laravel\Traits;
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\Request;
 use Jchedev\Laravel\Classes\BuilderServices\BuilderService;
 use Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers;
 use Jchedev\Laravel\Exceptions\UnexpectedClassException;
@@ -112,14 +111,10 @@ trait HandlesBuilderService
             return $data;
         }
 
-        if ($data instanceof Request) {
-            $inputs = $data->all();
-        } elseif (is_array($data)) {
-            $inputs = $data;
-        } else {
-            throw new UnexpectedClassException($data, [Modifiers::class, Request::class, []]);
+        if (!is_array($data)) {
+            throw new UnexpectedClassException($data, [Modifiers::class, []]);
         }
 
-        return new Modifiers($inputs);
+        return new Modifiers($data);
     }
 }

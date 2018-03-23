@@ -45,7 +45,7 @@ abstract class BuilderService
      */
     public function create(array $data)
     {
-        $validated_data = $this->validatorForCreate($data)->validate();
+        $validated_data = $this->validate($this->validatorForCreate($data));
 
         return $this->onCreate($validated_data);
     }
@@ -174,5 +174,19 @@ abstract class BuilderService
         $builder = $this->modifiedBuilder($modifiers);
 
         return $builder->toSql();
+    }
+
+    /**
+     * @param $data
+     * @param $rules
+     * @return mixed
+     */
+    protected function validate($data, array $rules = [])
+    {
+        if (is_a($data, \Illuminate\Validation\Validator::class)) {
+            return $data->validate();
+        }
+
+        return Validator::make($data, $rules)->validate();
     }
 }

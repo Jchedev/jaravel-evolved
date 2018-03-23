@@ -30,7 +30,9 @@ trait HandlesBuilderServiceWithRequest
     protected function makeModifiers($data = null)
     {
         if (is_null($data) || is_array($data)) {
-            $data_from_request = request()->all();
+            $data_from_request = request()->only([
+                'limit', 'offset', 'filters'
+            ]);
 
             $data = array_replace_recursive($data_from_request, is_array($data) ? $data : []);
         }

@@ -22,6 +22,11 @@ class Modifiers
     private $limit;
 
     /**
+     * @var array
+     */
+    private $withCount = [];
+
+    /**
      * Modifiers constructor.
      *
      * @param array $params
@@ -46,9 +51,10 @@ class Modifiers
                     $this->limit($value);
                     break;
                 case 'filters':
-                    if (is_array($value)) {
-                        $this->filters($value);
-                    }
+                    $this->filters($value);
+                    break;
+                case 'withCount':
+                    $this->withCount($value);
                     break;
             }
         }
@@ -106,9 +112,20 @@ class Modifiers
      * @param array $filters
      * @return $this
      */
-    public function filters(array $filters = [])
+    public function filters(array $filters = null)
     {
-        $this->filters = $filters;
+        $this->filters = is_array($filters) ? $filters : [];
+
+        return $this;
+    }
+
+    /**
+     * @param null $value
+     * @return $this
+     */
+    public function withCount($value = null)
+    {
+        $this->withCount = is_array($value) ? $value : (is_null($value) ? [] : [$value]);
 
         return $this;
     }
@@ -124,5 +141,7 @@ class Modifiers
 
             $builder->skip($this->offset);
         }
+
+        $builder->withCount($this->withCount);
     }
 }

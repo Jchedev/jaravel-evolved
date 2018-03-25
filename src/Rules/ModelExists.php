@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rules;
+namespace Jchedev\Laravel\Rules;
 
 use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Database\Eloquent\Builder;

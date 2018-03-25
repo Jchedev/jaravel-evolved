@@ -30,13 +30,56 @@ abstract class BuilderService
      * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function modifyBuilder(Builder $builder, Modifiers $modifiers = null)
+    protected function modifyBuilder(Builder $builder, Modifiers $modifiers = null)
     {
         if (!is_null($modifiers)) {
             $modifiers->applyToBuilder($builder);
         }
 
         return $builder;
+    }
+
+    /**
+     * @param array $data
+     * @param bool $skip_errors
+     * @return array|\Illuminate\Database\Eloquent\Collection
+     * @throws \Exception
+     */
+    public function createMany(array $data, $skip_errors = false)
+    {
+        $validator = $this->validatorForCreate();
+
+        $validated_data = [];
+
+        foreach ($data as $element_data) {
+            try {
+                $validator->setData($element_data);
+
+                $validated_data[] = $this->validate($validator);
+            }
+            catch (\Exception $e) {
+                if ($skip_errors === false) {
+                    throw $e;
+                }
+            }
+        }
+
+        return $this->onCreateMany($validated_data);
+    }
+
+    /**
+     * @param array $data
+     * @return array|\Illuminate\Database\Eloquent\Collection
+     */
+    protected function onCreateMany(array $data)
+    {
+        $return = $this->builder()->getModel()->newCollection();
+
+        foreach ($data as $element_data) {
+            $return->push($this->onCreate($element_data));
+        }
+
+        return $return;
     }
 
     /**
@@ -63,7 +106,7 @@ abstract class BuilderService
      * @param array $data
      * @return mixed
      */
-    public function validatorForCreate(array $data)
+    public function validatorForCreate(array $data = [])
     {
         return Validator::make($data, $this->validationRulesForCreate());
     }
@@ -181,12 +224,16 @@ abstract class BuilderService
      * @param $rules
      * @return mixed
      */
-    protected function validate($data, array $rules = [])
+    protected function validate($data, array $rules = null)
     {
         if (is_a($data, \Illuminate\Validation\Validator::class)) {
-            return $data->validate();
+            $validator = $data;
+        } else {
+            $validator = Validator::make($data, $rules);
         }
 
-        return Validator::make($data, $rules)->validate();
+        $validator->validate();
+
+        return array_only($validator->getData(), array_keys($validator->getRules()));
     }
 }

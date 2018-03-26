@@ -19,7 +19,8 @@
       "src/helpers/arrays.php",
       "src/helpers/objects.php",
       "src/helpers/strings.php",
-      "src/helpers/templates.php"
+      "src/helpers/templates.php",
+      "src/helpers/rules.php"
     ]
   }
 }

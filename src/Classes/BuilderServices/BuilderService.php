@@ -10,6 +10,11 @@ use Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator;
 abstract class BuilderService
 {
     /**
+     * @var bool
+     */
+    protected $with_validation = true;
+
+    /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
     abstract function builder();
@@ -37,6 +42,30 @@ abstract class BuilderService
         }
 
         return $builder;
+    }
+
+    /**
+     * @param array $data
+     * @return array|\Illuminate\Database\Eloquent\Collection
+     * @throws \Exception
+     */
+    public function createManyWithoutValidation(array $data)
+    {
+        $this->withoutValidation();
+
+        try {
+            $result = $this->createMany($data);
+        }
+        catch (\Exception $e) {
+        }
+
+        $this->withValidation();
+
+        if (isset($e)) {
+            throw $e;
+        }
+
+        return $result;
     }
 
     /**
@@ -88,7 +117,9 @@ abstract class BuilderService
      */
     public function create(array $data)
     {
-        $validated_data = $this->validate($this->validatorForCreate($data));
+        $validator = $this->validatorForCreate($data);
+
+        $validated_data = $this->validate($validator);
 
         return $this->onCreate($validated_data);
     }
@@ -220,19 +251,33 @@ abstract class BuilderService
     }
 
     /**
-     * @param $data
-     * @param $rules
-     * @return mixed
+     * @param bool $bool
+     * @return $this
      */
-    protected function validate($data, array $rules = null)
+    public function withValidation($bool = true)
     {
-        if (is_a($data, \Illuminate\Validation\Validator::class)) {
-            $validator = $data;
-        } else {
-            $validator = Validator::make($data, $rules);
-        }
+        $this->with_validation = $bool;
 
-        $validator->validate();
+        return $this;
+    }
+
+    /**
+     * @return \Jchedev\Laravel\Classes\BuilderServices\BuilderService
+     */
+    public function withoutValidation()
+    {
+        return $this->withValidation(false);
+    }
+
+    /**
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @return array
+     */
+    protected function validate(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        if ($this->with_validation === true) {
+            $validator->validate();
+        }
 
         return array_only($validator->getData(), array_keys($validator->getRules()));
     }

@@ -7,11 +7,6 @@ use Illuminate\Database\Eloquent\Builder;
 class Modifiers
 {
     /**
-     * @var  array
-     */
-    private $filters;
-
-    /**
      * @var int
      */
     private $offset;
@@ -22,9 +17,9 @@ class Modifiers
     private $limit;
 
     /**
-     * @var array
+     * @var  array
      */
-    private $withCount = [];
+    private $filters = [];
 
     /**
      * Modifiers constructor.
@@ -52,9 +47,6 @@ class Modifiers
                     break;
                 case 'filters':
                     $this->filters($value);
-                    break;
-                case 'withCount':
-                    $this->withCount($value);
                     break;
             }
         }
@@ -112,29 +104,28 @@ class Modifiers
      * @param array $filters
      * @return $this
      */
-    public function filters(array $filters = null)
+    public function filters(array $filters)
     {
-        $this->filters = is_array($filters) ? $filters : [];
+        foreach ($filters as $key => $filter) {
+            if (!is_array($filter)) {
+                $filter = [$key => $filter];
+            }
 
-        return $this;
-    }
-
-    /**
-     * @param null $value
-     * @return $this
-     */
-    public function withCount($value = null)
-    {
-        $this->withCount = is_array($value) ? $value : (is_null($value) ? [] : [$value]);
+            if (is_string($key)) {
+                $this->filters[$key] = $filter;
+            } else {
+                $this->filters[] = $filter;
+            }
+        }
 
         return $this;
     }
 
     /**
      * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param array $available_filters
      */
-    public function applyToBuilder(Builder $builder)
+    public function applyToBuilder(Builder $builder, array $available_filters = [])
     {
         if (!is_null($this->limit)) {
             $builder->take($this->limit < 0 ? 0 : $this->limit);
@@ -142,6 +133,27 @@ class Modifiers
             $builder->skip($this->offset);
         }
 
-        $builder->withCount($this->withCount);
+        $this->applyFiltersToBuilder($builder, $this->filters, $available_filters);
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @param array $filters_values
+     * @param array $available_filters
+     */
+    public function applyFiltersToBuilder(Builder $builder, array $filters_values, array $available_filters)
+    {
+        foreach ($filters_values as $filter) {
+            $builder->where(function ($builder) use ($filter, $available_filters) {
+
+                foreach ($filter as $key => $value) {
+                    $closure = array_get($available_filters, $key);
+
+                    if (is_callable($closure)) {
+                        $closure($builder, $value);
+                    }
+                }
+            });
+        }
     }
 }

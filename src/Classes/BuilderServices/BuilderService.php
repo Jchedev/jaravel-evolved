@@ -15,9 +15,42 @@ abstract class BuilderService
     protected $with_validation = true;
 
     /**
+     * @var array
+     */
+    protected $filters = [];
+
+    /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
     abstract function builder();
+
+    /**
+     * @return array
+     */
+    public function availableFilters()
+    {
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    public function validationRulesForCreate()
+    {
+        return [];
+    }
+
+    /**
+     * @param $key
+     * @param $value
+     * @return $this
+     */
+    public function addFilter($key, $value)
+    {
+        $this->filters[] = [$key => $value];
+
+        return $this;
+    }
 
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
@@ -37,24 +70,27 @@ abstract class BuilderService
      */
     protected function modifyBuilder(Builder $builder, Modifiers $modifiers = null)
     {
-        if (!is_null($modifiers)) {
-            $modifiers->applyToBuilder($builder);
-        }
+        $modifiers = $modifiers ? clone $modifiers : new Modifiers();
+
+        $modifiers->filters($this->filters);
+
+        $modifiers->applyToBuilder($builder, $this->availableFilters());
 
         return $builder;
     }
 
     /**
      * @param array $data
+     * @param array $opts
      * @return array|\Illuminate\Database\Eloquent\Collection
      * @throws \Exception
      */
-    public function createManyWithoutValidation(array $data)
+    public function createManyWithoutValidation(array $data, array $opts = [])
     {
         $this->withoutValidation();
 
         try {
-            $result = $this->createMany($data);
+            $result = $this->createMany($data, $opts);
         }
         catch (\Exception $e) {
         }
@@ -70,11 +106,12 @@ abstract class BuilderService
 
     /**
      * @param array $data
+     * @param array $opts
      * @param bool $skip_errors
      * @return array|\Illuminate\Database\Eloquent\Collection
      * @throws \Exception
      */
-    public function createMany(array $data, $skip_errors = false)
+    public function createMany(array $data, array $opts = [], $skip_errors = false)
     {
         $validator = $this->validatorForCreate();
 
@@ -93,19 +130,20 @@ abstract class BuilderService
             }
         }
 
-        return $this->onCreateMany($validated_data);
+        return $this->onCreateMany($validated_data, $opts);
     }
 
     /**
      * @param array $data
-     * @return array|\Illuminate\Database\Eloquent\Collection
+     * @param array $opts
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    protected function onCreateMany(array $data)
+    protected function onCreateMany(array $data, array $opts = [])
     {
         $return = $this->builder()->getModel()->newCollection();
 
         foreach ($data as $element_data) {
-            $return->push($this->onCreate($element_data));
+            $return->push($this->onCreate($element_data, $opts));
         }
 
         return $return;
@@ -113,22 +151,49 @@ abstract class BuilderService
 
     /**
      * @param array $data
-     * @return mixed
+     * @param array $opts
+     * @return \Illuminate\Database\Eloquent\Model
+     * @throws \Exception
      */
-    public function create(array $data)
+    public function createWithoutValidation(array $data, array $opts = [])
+    {
+        $this->withoutValidation();
+
+        try {
+            $result = $this->create($data, $opts);
+        }
+        catch (\Exception $e) {
+        }
+
+        $this->withValidation();
+
+        if (isset($e)) {
+            throw $e;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array $data
+     * @param array $opts
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function create(array $data, array $opts = [])
     {
         $validator = $this->validatorForCreate($data);
 
         $validated_data = $this->validate($validator);
 
-        return $this->onCreate($validated_data);
+        return $this->onCreate($validated_data, $opts);
     }
 
     /**
      * @param array $data
+     * @param array $opts
      * @return $this|\Illuminate\Database\Eloquent\Model
      */
-    protected function onCreate(array $data)
+    protected function onCreate(array $data, array $opts = [])
     {
         return $this->builder()->create($data);
     }
@@ -140,14 +205,6 @@ abstract class BuilderService
     public function validatorForCreate(array $data = [])
     {
         return Validator::make($data, $this->validationRulesForCreate());
-    }
-
-    /**
-     * @return array
-     */
-    public function validationRulesForCreate()
-    {
-        return [];
     }
 
     /**

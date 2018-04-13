@@ -20,7 +20,7 @@ trait HandlesBuilderService
      * @param array $data
      * @return mixed
      */
-    public function createFromService(BuilderService $service, array $data = [])
+    public function createThroughService(BuilderService $service, array $data = [])
     {
         return $service->create($data);
     }
@@ -30,7 +30,7 @@ trait HandlesBuilderService
      * @param null $modifiers
      * @return \Illuminate\Database\Eloquent\Collection|static[]
      */
-    public function getFromService(BuilderService $service, $modifiers = null)
+    public function getThroughService(BuilderService $service, $modifiers = null)
     {
         $modifiers = $this->makeModifiers($modifiers);
 
@@ -42,7 +42,7 @@ trait HandlesBuilderService
      * @param null $modifiers
      * @return \Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator
      */
-    public function paginateFromService(BuilderService $service, $modifiers = null)
+    public function paginateThroughService(BuilderService $service, $modifiers = null)
     {
         $modifiers = $this->makeModifiers($modifiers);
 
@@ -62,7 +62,7 @@ trait HandlesBuilderService
      * @param null $modifiers
      * @return int
      */
-    public function countFromService(BuilderService $service, $modifiers = null)
+    public function countThroughService(BuilderService $service, $modifiers = null)
     {
         $modifiers = $this->makeModifiers($modifiers);
 
@@ -76,7 +76,7 @@ trait HandlesBuilderService
      * @param null $modifiers
      * @return \Illuminate\Database\Eloquent\Model|null|static
      */
-    public function findFromService(BuilderService $service, $id, $key = null, $modifiers = null)
+    public function findThroughService(BuilderService $service, $id, $key = null, $modifiers = null)
     {
         $modifiers = $this->makeModifiers($modifiers);
 
@@ -90,9 +90,9 @@ trait HandlesBuilderService
      * @param null $modifiers
      * @return \Illuminate\Database\Eloquent\Model|null|static
      */
-    public function findOrFailFromService(BuilderService $service, $id, $key = null, $modifiers = null)
+    public function findOrFailThroughService(BuilderService $service, $id, $key = null, $modifiers = null)
     {
-        $item = $this->findFromService($service, $id, $key, $modifiers);
+        $item = $this->findThroughService($service, $id, $key, $modifiers);
 
         if (is_null($item)) {
             throw new ModelNotFoundException();

@@ -7,7 +7,7 @@ use Jchedev\Laravel\Classes\BuilderServices\BuilderService;
 trait HandlesBuilderServiceWithRequest
 {
     use HandlesBuilderService {
-        HandlesBuilderService::createFromService as traitCreateFromService;
+        HandlesBuilderService::createThroughService as traitCreateThroughService;
         HandlesBuilderService::makeModifiers as traitMakeModifiers;
     }
 
@@ -16,11 +16,11 @@ trait HandlesBuilderServiceWithRequest
      * @param array $data
      * @return mixed
      */
-    public function createFromService(BuilderService $service, array $data = [])
+    public function createThroughService(BuilderService $service, array $data = [])
     {
         $data = array_replace_recursive(request()->all(), $data);
 
-        return $this->traitCreateFromService($service, $data);
+        return $this->traitCreateThroughService($service, $data);
     }
 
     /**
@@ -30,9 +30,7 @@ trait HandlesBuilderServiceWithRequest
     protected function makeModifiers($data = null)
     {
         if (is_null($data) || is_array($data)) {
-            $data_from_request = request()->only([
-                'limit', 'offset', 'filters'
-            ]);
+            $data_from_request = request()->only(['limit', 'offset', 'filters']);
 
             $data = array_replace_recursive($data_from_request, is_array($data) ? $data : []);
         }

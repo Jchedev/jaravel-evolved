@@ -22,6 +22,11 @@ class Modifiers
     private $filters = [];
 
     /**
+     * @var  array
+     */
+    private $sort = [];
+
+    /**
      * Modifiers constructor.
      *
      * @param array $params
@@ -46,7 +51,12 @@ class Modifiers
                     $this->limit($value);
                     break;
                 case 'filters':
-                    $this->filters($value);
+                    if (is_array($value)) {
+                        $this->filters($value);
+                    }
+                    break;
+                case 'sort':
+                    $this->sort($value, array_get($params, 'sort_order'));
                     break;
             }
         }
@@ -122,10 +132,25 @@ class Modifiers
     }
 
     /**
+     * @param $sort
+     * @param null $order
+     * @return $this
+     */
+    public function sort($sort, $order = null)
+    {
+        if (!is_array($sort)) {
+            $this->sort[$sort] = in_array($order, ['asc', 'desc']) ?: 'asc';
+        }
+
+        return $this;
+    }
+
+    /**
      * @param \Illuminate\Database\Eloquent\Builder $builder
      * @param array $available_filters
+     * @param array $available_sort
      */
-    public function applyToBuilder(Builder $builder, array $available_filters = [])
+    public function applyToBuilder(Builder $builder, array $available_filters = [], array $available_sort = [])
     {
         if (!is_null($this->limit)) {
             $builder->take($this->limit < 0 ? 0 : $this->limit);
@@ -134,6 +159,8 @@ class Modifiers
         }
 
         $this->applyFiltersToBuilder($builder, $this->filters, $available_filters);
+
+        $this->applySortToBuilder($builder, $this->sort, $available_sort);
     }
 
     /**
@@ -154,6 +181,24 @@ class Modifiers
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @param array $sort_values
+     * @param array $available_sort
+     */
+    public function applySortToBuilder(Builder $builder, array $sort_values, array $available_sort)
+    {
+        foreach ($sort_values as $sort => $direction) {
+            $closure = array_get($available_sort, $sort);
+
+            if (is_string($closure)) {
+                $builder->orderBy($closure, $direction);
+            } elseif (is_callable($closure)) {
+                $closure($builder, $direction);
+            }
         }
     }
 }

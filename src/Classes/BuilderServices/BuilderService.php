@@ -2,6 +2,7 @@
 
 namespace Jchedev\Laravel\Classes\BuilderServices;
 
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
 use Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers;
@@ -22,12 +23,40 @@ abstract class BuilderService
     /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    abstract function builder();
+    abstract public function builder();
+
+    /**
+     *
+     */
+    public function getAvailableFilters()
+    {
+        $filters = $this->availableFilters();
+
+        return $filters instanceof Arrayable ? $filters->toArray() : $filters;
+    }
 
     /**
      * @return array
      */
-    public function availableFilters()
+    protected function availableFilters()
+    {
+        return [];
+    }
+
+    /**
+     *
+     */
+    public function getAvailableSort()
+    {
+        $sort = $this->availableSort();
+
+        return $sort instanceof Arrayable ? $sort->toArray() : $sort;
+    }
+
+    /**
+     * @return array
+     */
+    protected function availableSort()
     {
         return [];
     }
@@ -35,7 +64,17 @@ abstract class BuilderService
     /**
      * @return array
      */
-    public function validationRulesForCreate()
+    public function getValidationRulesForCreate()
+    {
+        $rules = $this->validationRulesForCreate();
+
+        return $rules instanceof Arrayable ? $rules->toArray() : $rules;
+    }
+
+    /**
+     * @return array
+     */
+    protected function validationRulesForCreate()
     {
         return [];
     }
@@ -74,7 +113,7 @@ abstract class BuilderService
 
         $modifiers->filters($this->filters);
 
-        $modifiers->applyToBuilder($builder, $this->availableFilters());
+        $modifiers->applyToBuilder($builder, $this->getAvailableFilters(), $this->getAvailableSort());
 
         return $builder;
     }
@@ -204,7 +243,7 @@ abstract class BuilderService
      */
     public function validatorForCreate(array $data = [])
     {
-        return Validator::make($data, $this->validationRulesForCreate());
+        return Validator::make($data, $this->getValidationRulesForCreate());
     }
 
     /**

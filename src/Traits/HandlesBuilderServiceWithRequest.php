@@ -30,18 +30,50 @@ trait HandlesBuilderServiceWithRequest
     protected function makeModifiers($data = null)
     {
         if (is_null($data) || is_array($data)) {
-            $data_from_request = request()->only(['limit', 'offset', 'filters', 'sort', 'sort_order']);
+            $data = array_replace_recursive($this->modifiersDataFromRequest(), is_array($data) ? $data : []);
 
-            if (isset($data_from_request['filters']) && !is_array($data_from_request['filters'])) {
-                $filters = json_decode($data_from_request['filters'], true);
-                if (is_array($filters)) {
-                    $data_from_request['filters'] = $filters;
+            if (isset($data['filters'])) {
+                $filters = [];
+
+                foreach ($data['filters'] as $key => $value) {
+                    $filters[] = [$key => $value];
                 }
-            }
 
-            $data = array_replace_recursive($data_from_request, is_array($data) ? $data : []);
+                $data['filters'] = $filters;
+            }
         }
 
         return $this->traitMakeModifiers($data);
+    }
+
+    /**
+     * @return array
+     */
+    protected function modifiersDataFromRequest()
+    {
+        $data_from_request = request()->only(['limit', 'offset', 'filters', 'sort', 'sort_order']);
+
+        if (isset($data_from_request['filters'])) {
+
+            // If $filters is a string, we try to json_decode it
+            if (!is_array($data_from_request['filters'])) {
+                $filters = json_decode($data_from_request['filters'], true);
+
+                if (is_array($filters)) {
+                    $data_from_request['filters'] = $filters;
+                } else {
+                    unset($data_from_request['filters']);
+                }
+            }
+
+            // Ignore all the filters with empty values
+            foreach ($data_from_request['filters'] as $key => $value) {
+                if (!is_string($key) || $value == '' || (is_array($value) && count($value) == 0)) {
+                    unset ($data_from_request['filters'][$key]);
+                }
+            }
+        }
+
+        return $data_from_request;
     }
 }

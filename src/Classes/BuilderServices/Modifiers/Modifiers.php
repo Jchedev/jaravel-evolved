@@ -117,15 +117,11 @@ class Modifiers
     public function filters(array $filters)
     {
         foreach ($filters as $key => $filter) {
-            if (!is_array($filter)) {
+            if (is_string($filter)) {
                 $filter = [$key => $filter];
             }
 
-            if (is_string($key)) {
-                $this->filters[$key] = $filter;
-            } else {
-                $this->filters[] = $filter;
-            }
+            $this->filters[] = $filter;
         }
 
         return $this;

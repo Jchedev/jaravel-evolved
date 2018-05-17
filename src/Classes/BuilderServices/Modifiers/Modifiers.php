@@ -38,6 +38,15 @@ class Modifiers
 
     /**
      * @param array $params
+     * @return \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers
+     */
+    static function make(array $params = [])
+    {
+        return new self($params);
+    }
+
+    /**
+     * @param array $params
      * @return $this
      */
     public function set(array $params)
@@ -117,7 +126,7 @@ class Modifiers
     public function filters(array $filters)
     {
         foreach ($filters as $key => $filter) {
-            if (is_string($filter)) {
+            if (is_string($key)) {
                 $filter = [$key => $filter];
             }
 

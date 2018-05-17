@@ -68,7 +68,7 @@ trait HandlesBuilderServiceWithRequest
 
             // Ignore all the filters with empty values
             foreach ($data_from_request['filters'] as $key => $value) {
-                if (!is_string($key) || $value == '' || (is_array($value) && count($value) == 0)) {
+                if (!is_string($key) || $value == '' || $value == 'null' || (is_array($value) && count($value) == 0)) {
                     unset ($data_from_request['filters'][$key]);
                 }
             }

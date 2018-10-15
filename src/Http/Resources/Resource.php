@@ -5,19 +5,30 @@ namespace Jchedev\Laravel\Http\Resources;
 class Resource extends \Illuminate\Http\Resources\Json\Resource
 {
     /**
+     * These are the requested includes
+     *
      * @var array
      */
-    static $default_includes = [];
+    protected $requestedIncludes = [];
 
     /**
+     * List of includes that are always enable for this resource
+     *
      * @var array
      */
-    static $always_load = [];
+    static $defaultIncludes = [];
+
+    /**
+     * List of includes that allowed for this resource
+     *
+     * @var array
+     */
+    static $availableIncludes = [];
 
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return array
      */
     public function toArray($request)
@@ -30,6 +41,37 @@ class Resource extends \Illuminate\Http\Resources\Json\Resource
     }
 
     /**
+     * @param $include
+     * @return $this
+     */
+    public function addIncludes($include)
+    {
+        $this->requestedIncludes = array_merge($this->requestedIncludes, (array)$include);
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getIncludesData()
+    {
+        $data = [];
+
+        $includes = array_merge($this->requestedIncludes, static::$defaultIncludes);
+
+        foreach ($includes as $include) {
+            $methodName = 'includes' . ucfirst($include);
+
+            if (in_array($include, static::$availableIncludes) && method_exists($this, $methodName)) {
+                $data[$include] = $this->$methodName();
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * @param $id
      * @param array $attributes
      * @return array
@@ -37,55 +79,14 @@ class Resource extends \Illuminate\Http\Resources\Json\Resource
     public function format($id, array $attributes = [])
     {
         $return = [
-            'id'            => $id,
-            'attributes'    => $attributes,
-            'relationships' => []
+            'id'         => $id,
+            'attributes' => $attributes
         ];
 
-        foreach (static::$default_includes as $include => $resource) {
-            if (class_exists($resource)) {
-                $return['relationships'][$include] = new $resource($this->$include);
-            }
+        if (count($includesData = $this->getIncludesData()) != 0) {
+            $return['relationships'] = $includesData;
         }
 
         return $return;
-    }
-
-    /**
-     * @param $resource
-     * @return mixed
-     */
-    static function collectionWithLoad($resource)
-    {
-        if ($resource instanceof \Jchedev\Laravel\Eloquent\Collections\Collection) {
-            $resource->loadMissing(static::relationstoLoad());
-        }
-
-        return parent::collection($resource);
-    }
-
-    /**
-     * @param null $path
-     * @return array
-     */
-    static function relationsToLoad($path = null)
-    {
-        $all_includes = [];
-
-        foreach (static::$always_load as $relation) {
-            $all_includes[] = $path . (is_null($path) ? '' : '.') . $relation;
-        }
-
-        foreach (static::$default_includes as $include => $resource) {
-            $new_path = $path . (is_null($path) ? '' : '.') . $include;
-
-            $all_includes[] = $new_path;
-
-            if (class_exists($resource)) {
-                $all_includes = array_merge($all_includes, $resource::relationsToLoad($new_path));
-            }
-        }
-
-        return $all_includes;
     }
 }

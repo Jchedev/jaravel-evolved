@@ -8,6 +8,7 @@ trait HandlesBuilderServiceWithRequest
 {
     use HandlesBuilderService {
         HandlesBuilderService::createThroughService as traitCreateThroughService;
+        HandlesBuilderService::paginateThroughService as traitPaginateThroughService;
         HandlesBuilderService::makeModifiers as traitMakeModifiers;
     }
 
@@ -30,17 +31,20 @@ trait HandlesBuilderServiceWithRequest
     protected function makeModifiers($data = null)
     {
         if (is_null($data) || is_array($data)) {
-            $data = array_replace_recursive($this->modifiersDataFromRequest(), is_array($data) ? $data : []);
+            $data = is_array($data) ? $data : [];
 
-            if (isset($data['filters'])) {
-                $filters = [];
+            $set_filters = array_pull($data, 'filters', []);
 
-                foreach ($data['filters'] as $key => $value) {
-                    $filters[] = [$key => $value];
+            $data = array_replace_recursive($this->modifiersDataFromRequest(), $data);
+
+            $grouped_filters = [];
+            foreach ([array_get($data, 'filters', []), $set_filters] as $filters) {
+                foreach ($filters as $key => $value) {
+                    $grouped_filters[] = [$key => $value];
                 }
-
-                $data['filters'] = $filters;
             }
+
+            $data['filters'] = $grouped_filters;
         }
 
         return $this->traitMakeModifiers($data);

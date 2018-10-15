@@ -2,8 +2,8 @@
 
 namespace Jchedev\Laravel\Classes\BuilderServices;
 
-use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers;
 use Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator;
@@ -20,20 +20,25 @@ abstract class BuilderService
      */
     protected $filters = [];
 
+
+    /**
+     * BuilderService constructor.
+     *
+     * @param array $filters
+     */
+    public function __construct(array $filters = [])
+    {
+        $this->filters = $filters;
+    }
+
+    /*
+     * Configuration of the Service Builder
+     */
+
     /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    abstract public function builder();
-
-    /**
-     *
-     */
-    public function getAvailableFilters()
-    {
-        $filters = $this->availableFilters();
-
-        return $filters instanceof Arrayable ? $filters->toArray() : $filters;
-    }
+    abstract protected function defaultBuilder();
 
     /**
      * @return array
@@ -41,16 +46,6 @@ abstract class BuilderService
     protected function availableFilters()
     {
         return [];
-    }
-
-    /**
-     *
-     */
-    public function getAvailableSort()
-    {
-        $sort = $this->availableSort();
-
-        return $sort instanceof Arrayable ? $sort->toArray() : $sort;
     }
 
     /**
@@ -64,40 +59,30 @@ abstract class BuilderService
     /**
      * @return array
      */
-    public function getValidationRulesForCreate()
-    {
-        $rules = $this->validationRulesForCreate();
-
-        return $rules instanceof Arrayable ? $rules->toArray() : $rules;
-    }
-
-    /**
-     * @return array
-     */
     protected function validationRulesForCreate()
     {
         return [];
     }
 
     /**
-     * @param $key
-     * @param $value
-     * @return $this
+     * @return array
      */
-    public function addFilter($key, $value)
+    protected function validationRulesForUpdate()
     {
-        $this->filters[] = [$key => $value];
-
-        return $this;
+        return [];
     }
+
+    /*
+     * Configure Builder based on modifiers and filters
+     */
 
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function modifiedBuilder(Modifiers $modifiers = null)
+    public function builder(Modifiers $modifiers = null)
     {
-        $builder = $this->builder();
+        $builder = $this->defaultBuilder();
 
         return $this->modifyBuilder($builder, $modifiers);
     }
@@ -113,10 +98,14 @@ abstract class BuilderService
 
         $modifiers->filters($this->filters);
 
-        $modifiers->applyToBuilder($builder, $this->getAvailableFilters(), $this->getAvailableSort());
+        $modifiers->applyToBuilder($builder, $this->availableFilters(), $this->availableSort());
 
         return $builder;
     }
+
+    /*
+     * Create New Model
+     */
 
     /**
      * @param array $data
@@ -243,8 +232,46 @@ abstract class BuilderService
      */
     public function validatorForCreate(array $data = [])
     {
-        return Validator::make($data, $this->getValidationRulesForCreate());
+        return Validator::make($data, $this->validationRulesForCreate());
     }
+
+    /*
+     * Update Model
+     */
+
+    // ... todo
+
+    /*
+     * Delete Model
+     */
+
+    /**
+     * @param $element
+     * @return bool|null
+     */
+    public function delete($element)
+    {
+        $model = $this->defaultBuilder()->getModel();
+
+        if (!is_a($element, get_class($model))) {
+            $element = $model->newQuery()->find($element);
+        }
+
+        return $this->onDelete($element);
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return bool|null
+     */
+    protected function onDelete(Model $model)
+    {
+        return $model->delete();
+    }
+
+    /*
+     * Get / Paginate / Count and other builder actions
+     */
 
     /**
      * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
@@ -253,7 +280,7 @@ abstract class BuilderService
      */
     public function get(Modifiers $modifiers = null, $columns = ['*'])
     {
-        $builder = $this->modifiedBuilder($modifiers);
+        $builder = $this->builder($modifiers);
 
         return $builder->get($columns);
     }
@@ -266,31 +293,21 @@ abstract class BuilderService
      */
     public function paginate(Modifiers $modifiers = null, $per_page = 15, $columns = ['*'])
     {
-        $modifiers = $this->preparePaginateModifiers($modifiers, $per_page);
-
-        $builder = $this->modifiedBuilder($modifiers);
-
-        $total = $builder->toBase()->getCountForPagination();
-
-        $items = ($total != 0 ? $builder->get($columns) : $builder->getModel()->newCollection());
-
-        return new ByOffsetLengthAwarePaginator($items, $total, $modifiers->getLimit(), $modifiers->getOffset());
-    }
-
-    /**
-     * @param \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers|null $modifiers
-     * @param int $per_page
-     * @return \Jchedev\Laravel\Classes\BuilderServices\Modifiers\Modifiers
-     */
-    private function preparePaginateModifiers(Modifiers $modifiers = null, $per_page = 15)
-    {
         $modifiers = $modifiers ?: new Modifiers();
 
         $limit = !is_null($limit = $modifiers->getLimit()) ? (int)$limit : $per_page;
 
         $offset = !is_null($offset = $modifiers->getOffset()) ? (int)$offset : 0;
 
-        return $modifiers->limit($limit)->offset($offset);
+        $modifiers->limit($limit)->offset($offset);
+
+        $builder = $this->builder($modifiers);
+
+        $total = $builder->toBase()->getCountForPagination();
+
+        $items = ($total != 0 ? $builder->get($columns) : $builder->getModel()->newCollection());
+
+        return new ByOffsetLengthAwarePaginator($items, $total, $limit, $offset);
     }
 
     /**
@@ -302,7 +319,7 @@ abstract class BuilderService
      */
     public function find($id, $key = null, Modifiers $modifiers = null, $columns = ['*'])
     {
-        $builder = $this->modifiedBuilder($modifiers);
+        $builder = $this->builder($modifiers);
 
         $key = $key ?: $builder->getModel()->getKeyName();
 
@@ -318,7 +335,7 @@ abstract class BuilderService
      */
     public function first(Modifiers $modifiers = null, $columns = ['*'])
     {
-        $builder = $this->modifiedBuilder($modifiers);
+        $builder = $this->builder($modifiers);
 
         return $builder->first($columns);
     }
@@ -330,7 +347,7 @@ abstract class BuilderService
      */
     public function count(Modifiers $modifiers = null, $columns = '*')
     {
-        $builder = $this->modifiedBuilder($modifiers);
+        $builder = $this->builder($modifiers);
 
         return $builder->count($columns);
     }
@@ -341,10 +358,14 @@ abstract class BuilderService
      */
     public function toSql(Modifiers $modifiers = null)
     {
-        $builder = $this->modifiedBuilder($modifiers);
+        $builder = $this->builder($modifiers);
 
         return $builder->toSql();
     }
+
+    /*
+     * Validation Management
+     */
 
     /**
      * @param bool $bool
@@ -376,5 +397,26 @@ abstract class BuilderService
         }
 
         return array_only($validator->getData(), array_keys($validator->getRules()));
+    }
+
+    /*
+     * Filters Management
+     */
+
+    /**
+     * @param $key
+     * @param $value
+     * @return $this
+     */
+    public function addFilter($key, $value)
+    {
+        $this->filters[] = [$key => $value];
+
+        return $this;
+    }
+
+    public function removeFilter()
+    {
+        // ...
     }
 }

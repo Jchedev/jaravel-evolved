@@ -6,29 +6,64 @@ Note: The following examples are based on a system which has a model `User` (sql
 
 
 
+## Jchedev\Laravel\Classes
+
+This library comes with some useful standalone classes:
+
+- `Pagination\ByOffsetLengthAwarePaginator` 
+(todo...)
+
+
+
+## Jchedev\Laravel\Console\Commands\Command
+(todo...)
+
+### New methods
+
+- #### `createProgressBar($nbLines)`
+(todo...)
+
+- #### `advanceProgressBar($nbLinesMoved = 1)`
+(todo...)
+
+- #### `hasActiveProgressBar()`
+(todo...)
+
+- #### `finishProgressBar()`
+(todo...)
+
+- #### `handleJobOrDefer(ShouldQueue $job, $deferred = false)`
+(todo...)
+
+### Modified methods
+
+- #### `info($message, $verbosity = null, $tab = 0)`
+(todo...)
+
+- #### `comment($message, $verbosity = null, $tab = 0)`
+(todo...)
+
+- #### `error($message, $verbosity = null, $tab = 0)`
+(todo...)
+
+
+
 ## Jchedev\Laravel\Eloquent\Models\Model
 
-This class inherits directly from [Illuminate\Database\Eloquent\Model](https://laravel.com/api/5.3/Illuminate/Database/Eloquent/Model.html) but add some features, specifically about relations management.
-
-#### Accessing relation values
-
-(todo: Describe the concept of associatedXXXX())
+This class inherits directly from [Illuminate\Database\Eloquent\Model](https://laravel.com/api/5.7/Illuminate/Database/Eloquent/Model.html) but add some features, specifically about relations management.
 
 ### New methods
 
 - #### _static_ `table()`
-
 (todo...)
 
 - #### _static_ `tableColumn($column)`
-
 (todo...)
 
 - #### `getTableColumn($column)`
-
 (todo...)
 
-### Override methods
+### Modified methods
 
 - #### `newEloquentBuilder($query)`
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Builders\Builder` instead. If you decide to return your own builder model, you should make it inherits from `Jchedev\Laravel\Eloquent\Builders\Builder` first. 
@@ -36,23 +71,13 @@ This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Builders\
 - #### `newCollection(array $models = [])`
 This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collections\Collection` instead. If you decide to return your own collection model, you should make it inherits from `Jchedev\Laravel\Eloquent\Collections\Collection` first. 
 
-- #### `relationLoaded($relations)`
-This method overwrites the initial behavior of laravel but allows to check if nested relations are loaded (Example: `User.Posts.Comments`) where Laravel can't. 
-
 
 
 ## Jchedev\Laravel\Eloquent\Collections\Collection
 
-This class inherits directly from [Illuminate\Database\Eloquent\Collection](https://laravel.com/api/5.3/Illuminate/Database/Eloquent/Collection.html) but add new methods.
-
-#### Using a scope method
-
-(todo...)
+This class inherits directly from [Illuminate\Database\Eloquent\Collection](https://laravel.com/api/5.7/Illuminate/Database/Eloquent/Collection.html) but add new methods.
 
 ### New methods
-
-- #### `loadMissing($relations)`
-The `load($relations)` method will always load the requested `$relations` for **all** the items of the collection even if they are already loaded. `loadMissing($relations)` only load the necessary ones.
 
 - #### `builder()`
 Returns a builder targeting only the items of the collection (using `whereIn(primary_key, [...])`). This method expects all the items of the collection to be from the same Model (Mixing some "Users" to some "Comments" will create unwanted behavior).  
@@ -61,9 +86,18 @@ Returns a builder targeting only the items of the collection (using `whereIn(pri
 
 ## Jchedev\Laravel\Eloquent\Builders\Builder
 
-This class inherits directly from [Illuminate\Database\Eloquent\Builder](https://laravel.com/api/5.3/Illuminate/Database/Eloquent/Builder.html) but add new methods.
+This class inherits directly from [Illuminate\Database\Eloquent\Builder](https://laravel.com/api/5.7/Illuminate/Database/Eloquent/Builder.html) but add new methods.
 
 ### New methods
+
+- #### `getModelTableColumn($column)`
+(todo...)
+
+- #### `addSelectOnRelation($relationName, $fields)`
+(todo...)
+
+- #### `joinOnRelation($relationName, $type = 'inner')`
+(todo...)
 
 - #### `countWithLimit($columns = '*')`
 With the existing implementation of the `count()` method, the `limit` parameters is ignored. This method changes that. 
@@ -73,63 +107,100 @@ User::take(10)->count() =  200
 User::take(10)->countWithLimit() = 10
 ```
 
-- #### `forceFail()`
-Sometimes, we want to make sure that a query builder will returns 0 results. This method can be combined to `get()` or `count()` to do that. 
-```
-Example: 
-User::forceFail()->count() = 0
-User::forceFail()->get() = empty collection
-```
-
-- #### `randomize()`
-
+- #### `chunkWithLimit($count, callable $callback, $limit = null)`
 (todo...)
 
-- #### `getModelTableColumn($column)`
-
-(todo...)
-
-### Override methods
-
-- #### `setModel(Model $model)`
-
-(todo...)
+### Modified methods
 
 - #### `select($columns = ['*'])`
+(todo...)
 
+- #### `addSelect($column, $addSelectAll = true)`
 (todo...)
 
 - #### `where($column, $operator = null, $value = null, $boolean = 'and')`
-
 (todo...)
 
 - #### `whereNull($column, $boolean = 'and', $not = false)`
-
 (todo...)
 
 - #### `whereIn($column, $values, $boolean = 'and', $not = false)`
-
 (todo...)
 
 - #### `whereIs($value, $boolean = 'and', $not = false)`
-
 (todo...)
 
 - #### `whereBetween($column, array $values, $boolean = 'and', $not = false)`
-
 (todo...)
 
 
 
-## Jchedev\Laravel\Console\Commands\Command
+## Jchedev\Laravel\Exceptions
 
+This library comes with some extra exceptions:
+
+- `UnexpectedClassException`
 (todo...)
+
+
+
+## Jchedev\Laravel\Http\Middleware
+
+This library comes with some extra middleware:
+
+- `AuthNotRequired`
+(todo...)
+
+- `LogQueries`
+(todo...)
+
+- `MinifiedResponse`
+(todo...)
+
+
+
+## Jchedev\Laravel\Http\Resources\Collection
+(todo...)
+
+
+
+## Jchedev\Laravel\Http\Resources\Resource
+(todo...)
+
+
+
+## Jchedev\Laravel\Rules
+
+This library comes with some extra rules:
+
+- `isObject`
+
+- `ModelExists`
+
+
+
+## Jchedev\Laravel\Traits
+
+This library comes with some extra rules:
+
+- `HandlesExceptions`
+
+- `HasReference`
 
 
 
 ## Helpers
 
 This library comes with some useful helpers:
+
+- `array_get_any(array $array, array $keys, $default = null)`
+(todo...)
+
+- `rules_require_one_of(array $rules)`
+(todo...)
+
+- `sanitize_string($value)`
+(todo...)
 
 - `boolean_to_string($value, $true = 'true', $false = 'false')`: 
 Converts a boolean true/false into a string (Default values: "true" or "false").

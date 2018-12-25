@@ -12,17 +12,17 @@ abstract class Command extends \Illuminate\Console\Command
     /**
      * Data used during the log (if activated)
      */
-    protected $_return = [];
-
-    /**
-     * Save the progressbar as an internal value to track the status
-     */
-    protected $_active_progressbar;
+    protected $return = [];
 
     /**
      * Should we also count the number of queries? Resource heavy
      */
-    protected $_count_queries = false;
+    protected $countQueries = false;
+
+    /**
+     * @var
+     */
+    protected $activeProgressBar;
 
     /**
      * This method is called by the handle() method
@@ -46,75 +46,62 @@ abstract class Command extends \Illuminate\Console\Command
      */
     public function handle()
     {
-        //Check if we should activate the queries log by looking at the option --with-sql
+        if ($this->countQueries == true || $this->option('with-sql') === true) {
+            $this->countQueries = true;
 
-        if ($this->_count_queries == true || $this->option('with-sql') === true) {
-            \DB::enableQueryLog();
-
-            $this->_count_queries = true;
+            $this->enableQueryLog();
         }
 
-        // Info about the command execution
+        $this->info('[*] Beginning of the command ' . $this->getCommandName(), $this->parseVerbosity('v'));
 
-        $command_name = substr($this->signature, 0, strpos($this->signature, ' '));
-
-        $this->info('[*] Beginning of the command ' . $command_name, $this->parseVerbosity('v'));
-
-        // Execute the logic and catch exception to display as "error"
-
-        $starting_time = microtime(true);
+        $startTime = microtime(true);
 
         try {
-            // That's where we handle the logic and the full command
             $this->handleLogic();
 
-            // Callback called because the command was a success
             $this->onSuccess();
         }
         catch (\Exception $e) {
-            // Callback called because an error occurred during the execution
             if ($this->onError($e) === false) {
                 unset($e);
             }
+        } finally {
+            $this->onComplete();
         }
 
-        $this->onComplete();
-
-        // Log execution time and output info about the execution results
+        $endTime = microtime(true);
 
         $this->info('[*] End of the command', $this->parseVerbosity('v'));
 
-        $end_time = microtime(true);
+        $this->return['execution_time'] = ($executionTime = round($endTime - $startTime, 2));
 
-        $this->_return['execution_time'] = round($end_time - $starting_time, 2);
+        $this->comment('- Execution time: ' . $executionTime, $this->parseVerbosity('v'), 1);
 
-        $this->comment('- Execution time: ' . $this->_return['execution_time'], $this->parseVerbosity('v'), 1);
+        if ($this->countQueries === true) {
+            $queries = $this->getQueryLog();
 
-        // Count and display the queries (if activated)
+            $this->return['nb_queries'] = ($nbQueries = count($queries));
 
-        if ($this->_count_queries === true) {
-            $queries = \DB::getQueryLog();
+            $this->comment('- Queries: ' . $nbQueries, $this->parseVerbosity('v'), 1);
 
-            $this->_return['nb_queries'] = count($queries);
-
-            $this->comment('- Queries: ' . $this->_return['nb_queries'], $this->parseVerbosity('v'), 1);
-
-            // If the verbosity is right, we output all the queries executed
-
-            if ($this->output->getVerbosity() == $this->parseVerbosity('vv')) {
+            if (in_array($this->output->getVerbosity(), [$this->parseVerbosity('vv'), $this->parseVerbosity('vvv')])) {
                 foreach ($queries as $query) {
-                    $this->comment('-- ' . $query['query'] . ' (' . $query['time'] . ')', null, 1);
+                    $this->comment('- ' . $query['query'] . ' (' . $query['time'] . ')', null, 2);
                 }
             }
-
-            unset ($queries);
         }
-
-        // Throw any caught error during the execution
 
         if (isset($e)) {
             throw $e;
         }
+    }
+
+    /**
+     * @return bool|string
+     */
+    protected function getCommandName()
+    {
+        return substr($this->signature, 0, strpos($this->signature, ' '));
     }
 
     /**
@@ -126,7 +113,7 @@ abstract class Command extends \Illuminate\Console\Command
     {
         $this->error('An error occurred: ' . $exception->getMessage());
 
-        $this->_return['error'] = $exception->getMessage();
+        $this->return['error'] = $exception->getMessage();
     }
 
     /**
@@ -143,6 +130,22 @@ abstract class Command extends \Illuminate\Console\Command
     protected function onSuccess()
     {
         // Can be overwritten by a child class
+    }
+
+    /**
+     *
+     */
+    protected function enableQueryLog()
+    {
+        \DB::enableQueryLog();
+    }
+
+    /**
+     * @return mixed
+     */
+    protected function getQueryLog()
+    {
+        return \DB::getQueryLog();
     }
 
     /**
@@ -207,32 +210,31 @@ abstract class Command extends \Illuminate\Console\Command
         parent::error($message, $verbosity);
     }
 
-
     /**
      * Create a new progressbar and save it as the command level for future use
      *
-     * @param $nb_lines
-     * @return bool|\Symfony\Component\Console\Helper\ProgressBar
+     * @param $nbLines
+     * @return mixed
      */
-    public function createProgressBar($nb_lines)
+    public function createProgressBar($nbLines)
     {
-        $this->_active_progressbar = $this->output->createProgressBar($nb_lines);
+        $this->activeProgressBar = $this->output->createProgressBar($nbLines);
 
-        return $this->_active_progressbar;
+        return $this->activeProgressBar;
     }
 
     /**
      * Advance the progressbar (if active)
      *
-     * @param $nb_lines_moved
+     * @param int $nbLinesMoved
      */
-    public function advanceProgressBar($nb_lines_moved = 1)
+    public function advanceProgressBar($nbLinesMoved = 1)
     {
         if ($this->hasActiveProgressBar() === false) {
             return;
         }
 
-        $this->_active_progressbar->advance($nb_lines_moved);
+        $this->activeProgressBar->advance($nbLinesMoved);
     }
 
     /**
@@ -244,9 +246,9 @@ abstract class Command extends \Illuminate\Console\Command
             return false;
         }
 
-        $this->_active_progressbar->finish();
+        $this->activeProgressBar->finish();
 
-        unset($this->_active_progressbar);
+        $this->activeProgressBar = null;
 
         $this->info("");
     }
@@ -258,7 +260,7 @@ abstract class Command extends \Illuminate\Console\Command
      */
     public function hasActiveProgressBar()
     {
-        return !is_null($this->_active_progressbar);
+        return !is_null($this->activeProgressBar);
     }
 
     /**

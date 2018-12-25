@@ -12,6 +12,12 @@ class ModelExists implements Rule
 
     protected $attribute;
 
+    /**
+     * ModelExists constructor.
+     *
+     * @param $check_on
+     * @param null $attribute
+     */
     public function __construct($check_on, $attribute = null)
     {
         $this->check_on = $check_on;
@@ -41,7 +47,7 @@ class ModelExists implements Rule
      * @param \Illuminate\Database\Eloquent\Model $model
      * @param $value
      * @param null $on_attribute
-     * @return \App\Rules\ModelExists|\Illuminate\Database\Eloquent\Model|null|object
+     * @return \Illuminate\Database\Eloquent\Model|\Jchedev\Laravel\Rules\ModelExists|null|object
      */
     protected function checkOnModel(Model $model, $value, $on_attribute = null)
     {

@@ -17,11 +17,11 @@ trait HandlesExceptions
      */
     public function convertExceptionToJsonResponse(\Exception $exception)
     {
-        $status_code = $this->exceptionToStatusCode($exception);
+        $statusCode = $this->exceptionToStatusCode($exception);
 
-        $array = $this->exceptionToArray($exception, $status_code);
+        $array = $this->exceptionToArray($exception, $statusCode);
 
-        return response()->json($array, $status_code);
+        return response()->json($array, $statusCode);
     }
 
     /**
@@ -31,49 +31,49 @@ trait HandlesExceptions
     protected function exceptionToStatusCode(\Exception $exception)
     {
         // Default Response (500 Http Code)
-        $status_code = HttpResponse::HTTP_INTERNAL_SERVER_ERROR;
+        $statusCode = HttpResponse::HTTP_INTERNAL_SERVER_ERROR;
 
         if ($exception instanceof AuthorizationException) {
             // Status Code: 403
-            $status_code = HttpResponse::HTTP_FORBIDDEN;
+            $statusCode = HttpResponse::HTTP_FORBIDDEN;
 
         } elseif ($exception instanceof AuthenticationException) {
             // Status Code: 401
-            $status_code = HttpResponse::HTTP_UNAUTHORIZED;
+            $statusCode = HttpResponse::HTTP_UNAUTHORIZED;
 
         } elseif ($exception instanceof ValidationException) {
             // Status Code: 400
-            $status_code = HttpResponse::HTTP_BAD_REQUEST;
+            $statusCode = HttpResponse::HTTP_BAD_REQUEST;
 
         } elseif ($exception instanceof ModelNotFoundException) {
             // Status Code: 404
-            $status_code = HttpResponse::HTTP_NOT_FOUND;
+            $statusCode = HttpResponse::HTTP_NOT_FOUND;
 
         } elseif ($exception instanceof HttpException) {
             // Status Code: Exception Status
-            $status_code = $exception->getStatusCode();
+            $statusCode = $exception->getStatusCode();
         }
 
-        return $status_code;
+        return $statusCode;
     }
 
     /**
      * @param \Exception $exception
-     * @param $status_code
+     * @param $statusCode
      * @return array
      */
-    protected function exceptionToArray(\Exception $exception, $status_code)
+    protected function exceptionToArray(\Exception $exception, $statusCode)
     {
         $message = $exception->getMessage();
 
-        if ($status_code == HttpResponse::HTTP_INTERNAL_SERVER_ERROR && config('app.debug') === false) {
+        if ($statusCode == HttpResponse::HTTP_INTERNAL_SERVER_ERROR && config('app.debug') === false) {
             $message = null;
         }
 
         $response = [
             'error' => [
-                'status_code' => $status_code,
-                'message'     => empty($message) ? HttpResponse::$statusTexts[$status_code] : $message
+                'status_code' => $statusCode,
+                'message'     => empty($message) ? HttpResponse::$statusTexts[$statusCode] : $message
             ]
         ];
 

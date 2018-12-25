@@ -8,13 +8,13 @@
  */
 function get_class_basename($object)
 {
-    $class_name = is_object($object) ? get_class($object) : $object;
+    $className = is_object($object) ? get_class($object) : $object;
 
-    if ($pos = strrpos($class_name, '\\')) {
-        return substr($class_name, $pos + 1);
+    if ($pos = strrpos($className, '\\')) {
+        return substr($className, $pos + 1);
     }
 
-    return $class_name;
+    return $className;
 }
 
 /**
@@ -25,10 +25,10 @@ function get_class_basename($object)
  */
 function get_class_namespace($object)
 {
-    $class_name = is_object($object) ? get_class($object) : $object;
+    $className = is_object($object) ? get_class($object) : $object;
 
-    if ($pos = strrpos($class_name, '\\')) {
-        return substr($class_name, 0, $pos);
+    if ($pos = strrpos($className, '\\')) {
+        return substr($className, 0, $pos);
     }
 
     return null;

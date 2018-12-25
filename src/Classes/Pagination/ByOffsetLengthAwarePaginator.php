@@ -6,6 +6,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class ByOffsetLengthAwarePaginator extends LengthAwarePaginator
 {
+    /**
+     * @return array
+     */
     public function toArray()
     {
         return [

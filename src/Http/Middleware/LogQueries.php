@@ -15,10 +15,10 @@ class LogQueries
      */
     public function handle($request, \Closure $next)
     {
-        $debug_enabled = Config::get('app.debug');
+        $debugEnabled = Config::get('app.debug');
 
         // Step 1: We enable the SQL tracking
-        if ($debug_enabled === true) {
+        if ($debugEnabled === true) {
             DB::enableQueryLog();
         }
 
@@ -26,7 +26,7 @@ class LogQueries
         $response = $next($request);
 
         // Step 3: We try to append the sql queries to the response
-        if ($debug_enabled === true) {
+        if ($debugEnabled === true) {
 
             // We can append the debug to a JsonResponse without problem
             if (is_a($response, JsonResponse::class)) {

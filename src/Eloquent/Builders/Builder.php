@@ -30,12 +30,12 @@ class Builder extends EloquentBuilder
 
     /**
      * @param array|mixed $column
-     * @param bool $add_select_all
-     * @return $this
+     * @param bool $addSelectAll
+     * @return mixed
      */
-    public function addSelect($column, $add_select_all = true)
+    public function addSelect($column, $addSelectAll = true)
     {
-        if ($add_select_all && count($this->getQuery()->columns) == 0) {
+        if ($addSelectAll && count($this->getQuery()->columns) == 0) {
             $this->select();
         }
 
@@ -49,7 +49,7 @@ class Builder extends EloquentBuilder
      * @param null $operator
      * @param null $value
      * @param string $boolean
-     * @return $this
+     * @return mixed
      */
     public function where($column, $operator = null, $value = null, $boolean = 'and')
     {
@@ -124,11 +124,11 @@ class Builder extends EloquentBuilder
      */
     public function countWithLimit($columns = '*')
     {
-        $parent_count = $this->count($columns);
+        $parentCount = $this->count($columns);
 
         $limit = $this->getQuery()->limit;
 
-        return (!is_null($limit) && $limit < $parent_count) ? $limit : $parent_count;
+        return (!is_null($limit) && $limit < $parentCount) ? $limit : $parentCount;
     }
 
     /**
@@ -170,22 +170,22 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * @param $relation_name
+     * @param $relationName
      * @param $fields
      * @return $this
      */
-    public function addSelectOnRelation($relation_name, $fields)
+    public function addSelectOnRelation($relationName, $fields)
     {
-        $query = $this->getQueryRelation($relation_name);
+        $query = $this->getQueryRelation($relationName);
 
-        $this->joinOnRelation($relation_name, 'left');
+        $this->joinOnRelation($relationName, 'left');
 
         foreach ($fields as $key => $value) {
 
             if (is_a($value, Expression::class)) {
                 $raw = $value;
             } else {
-                $as = !is_int($key) ? $value : (str_replace('.', '_', $relation_name) . '_' . $value);
+                $as = !is_int($key) ? $value : (str_replace('.', '_', $relationName) . '_' . $value);
 
                 $column = $query->from . '.' . (!is_int($key) ? $key : $value);
 
@@ -199,13 +199,13 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * @param $relation_name
+     * @param $relationName
      * @param string $type
      * @return $this
      */
-    public function joinOnRelation($relation_name, $type = 'inner')
+    public function joinOnRelation($relationName, $type = 'inner')
     {
-        $query = $this->getQueryRelation($relation_name);
+        $query = $this->getQueryRelation($relationName);
 
         $constraints = $query->wheres;
 
@@ -226,12 +226,12 @@ class Builder extends EloquentBuilder
      */
     private function getQueryRelation($relation_name)
     {
-        $clean_builder = $this->getModel()->newQuery();
+        $cleanBuilder = $this->getModel()->newQuery();
 
-        $clean_builder->has($relation_name);
+        $cleanBuilder->has($relation_name);
 
-        $has_wheres = $clean_builder->getQuery()->wheres;
+        $hasWheres = $cleanBuilder->getQuery()->wheres;
 
-        return $has_wheres[0]['query'];
+        return $hasWheres[0]['query'];
     }
 }

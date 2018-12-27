@@ -19,4 +19,23 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
 
         return $firstElement->newQuery()->whereIn($firstElement->getKeyName(), $this->modelKeys());
     }
+
+    /**
+     * @param array $attributes
+     * @param array $options
+     */
+    public function update(array $attributes = [], array $options = [])
+    {
+        $perTypes = $this->groupBy(function ($element) {
+            return get_class($element);
+        });
+
+        foreach ($perTypes as $class => $collection) {
+            if (is_null($builder = $collection->builder())) {
+                continue;
+            }
+
+            $builder->update($attributes, $options);
+        }
+    }
 }

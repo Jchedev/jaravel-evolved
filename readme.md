@@ -93,10 +93,10 @@ This class inherits directly from [Illuminate\Database\Eloquent\Builder](https:/
 - #### `getModelTableColumn($column)`
 (todo...)
 
-- #### `addSelectOnRelation($relationName, $fields)`
+- #### `addSelectThroughRelation($relationName, $fields)`
 (todo...)
 
-- #### `joinOnRelation($relationName, $type = 'inner')`
+- #### `joinThroughRelation($relationName, $type = 'inner')`
 (todo...)
 
 - #### `countWithLimit($columns = '*')`

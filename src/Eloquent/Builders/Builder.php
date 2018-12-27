@@ -174,7 +174,7 @@ class Builder extends EloquentBuilder
      * @param $fields
      * @return $this
      */
-    public function addSelectOnRelation($relationName, $fields)
+    public function addSelectThroughRelation($relationName, $fields)
     {
         $query = $this->getQueryRelation($relationName);
 
@@ -203,7 +203,7 @@ class Builder extends EloquentBuilder
      * @param string $type
      * @return $this
      */
-    public function joinOnRelation($relationName, $type = 'inner')
+    public function joinThroughRelation($relationName, $type = 'inner')
     {
         $query = $this->getQueryRelation($relationName);
 

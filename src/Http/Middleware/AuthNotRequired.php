@@ -10,7 +10,7 @@ class AuthNotRequired extends Authenticate
     public function handle($request, \Closure $next, ...$guards)
     {
         try {
-            $this->authenticate($guards);
+            $this->authenticate($request, $guards);
         }
         catch (AuthenticationException $exception) {
             // Because it is optional, we don't generate the exception at this point.

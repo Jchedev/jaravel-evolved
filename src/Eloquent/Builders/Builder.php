@@ -29,20 +29,6 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * @param array|mixed $column
-     * @param bool $addSelectAll
-     * @return mixed
-     */
-    public function addSelect($column, $addSelectAll = true)
-    {
-        if ($addSelectAll && count($this->getQuery()->columns) == 0) {
-            $this->select();
-        }
-
-        return parent::addSelect($column);
-    }
-
-    /**
      * Overwrite the where method to add the table name in front of the column
      *
      * @param string $column

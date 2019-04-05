@@ -4,7 +4,9 @@ namespace Jchedev\Laravel\Classes\Selector;
 
 class Selector
 {
-    protected $builder;
+    protected $originalBuilder;
+
+    protected $modifiedBuilder;
 
     protected $limit = null;
 
@@ -40,9 +42,9 @@ class Selector
      */
     public function setBuilder($builder)
     {
-        $this->builder = $builder;
+        $this->originalBuilder = $builder;
 
-        return $this;
+        return $this->clearModifiedBuilder();
     }
 
     /**
@@ -53,7 +55,7 @@ class Selector
     {
         $this->filtering = $filtering;
 
-        return $this;
+        return $this->clearModifiedBuilder();
     }
 
     /**
@@ -64,7 +66,7 @@ class Selector
     {
         $this->sorting = $sorting;
 
-        return $this;
+        return $this->clearModifiedBuilder();
     }
 
     /**
@@ -75,7 +77,7 @@ class Selector
     {
         $this->limit = $limit;
 
-        return $this;
+        return $this->clearModifiedBuilder();
     }
 
     /**
@@ -86,7 +88,7 @@ class Selector
     {
         $this->offset = $offset;
 
-        return $this;
+        return $this->clearModifiedBuilder();
     }
 
     /**
@@ -97,7 +99,7 @@ class Selector
     {
         $this->filters = $filters;
 
-        return $this;
+        return $this->clearModifiedBuilder();
     }
 
     /**
@@ -106,7 +108,32 @@ class Selector
      */
     public function setSorts(array $sorts)
     {
-        $this->sorts = $sorts;
+        $newSorts = [];
+
+        foreach ($sorts as $key => $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+            if (is_integer($key)) {
+                $newSorts[$value] = 'asc';
+            } else {
+                $direction = strtolower($value);
+
+                $newSorts[$key] = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+            }
+        }
+
+        $this->sorts = $newSorts;
+
+        return $this->clearModifiedBuilder();
+    }
+
+    /**
+     * @return $this
+     */
+    protected function clearModifiedBuilder()
+    {
+        $this->modifiedBuilder = null;
 
         return $this;
     }
@@ -122,7 +149,9 @@ class Selector
                 $filter = $this->filtering[$key];
 
                 if (is_callable($filter)) {
-                    $filter($builder, $value);
+                    if ($filter($builder, $value) === false) {
+                        $builder->willFail = true;
+                    }
                 }
             }
         }
@@ -136,6 +165,16 @@ class Selector
      */
     protected function applySorting($builder)
     {
+        foreach ($this->sorts as $key => $direction) {
+            if (isset($this->sorting[$key])) {
+                $sort = $this->sorting[$key];
+
+                if (is_callable($sort)) {
+                    $sort($builder, $direction);
+                }
+            }
+        }
+
         return $builder;
     }
 
@@ -159,15 +198,19 @@ class Selector
      */
     public function getBuilder()
     {
-        $builder = clone $this->builder;
+        if (is_null($this->modifiedBuilder)) {
+            $builder = clone $this->originalBuilder;
 
-        $this->applyFilters($builder);
+            $this->applyFilters($builder);
 
-        $this->applySorting($builder);
+            $this->applySorting($builder);
 
-        $this->applyPagination($builder);
+            $this->applyPagination($builder);
 
-        return $builder;
+            $this->modifiedBuilder = $builder;
+        }
+
+        return $this->modifiedBuilder;
     }
 
     /**
@@ -176,7 +219,13 @@ class Selector
      */
     public function get($columns = ['*'])
     {
-        return $this->getBuilder()->get($columns);
+        $builder = $this->getBuilder();
+
+        if (data_get($builder, 'willFail') === true) {
+            return collect();
+        }
+
+        return $builder->get($columns);
     }
 
     /**
@@ -185,6 +234,12 @@ class Selector
      */
     public function count($columns = '*')
     {
-        return $this->getBuilder()->count($columns);
+        $builder = $this->getBuilder();
+
+        if (data_get($builder, 'willFail') === true) {
+            return 0;
+        }
+
+        return $builder->count($columns);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Jchedev\Laravel\Classes\Selector;
 
+use Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator;
+
 class Selector
 {
     protected $originalBuilder;
@@ -142,9 +144,9 @@ class Selector
      * @param $builder
      * @return mixed
      */
-    protected function applyFilters($builder)
+    protected function applyFilters($builder, array $filters)
     {
-        foreach ($this->filters as $key => $value) {
+        foreach ($filters as $key => $value) {
             if (isset($this->filtering[$key])) {
                 $filter = $this->filtering[$key];
 
@@ -163,9 +165,9 @@ class Selector
      * @param $builder
      * @return mixed
      */
-    protected function applySorting($builder)
+    protected function applySorting($builder, array $sorts)
     {
-        foreach ($this->sorts as $key => $direction) {
+        foreach ($sorts as $key => $direction) {
             if (isset($this->sorting[$key])) {
                 $sort = $this->sorting[$key];
 
@@ -182,12 +184,14 @@ class Selector
      * @param $builder
      * @return mixed
      */
-    protected function applyPagination($builder)
+    protected function applyPagination($builder, $limit = null, $offset = null)
     {
-        if (!is_null($this->limit)) {
-            $builder->limit($this->limit);
+        if (!is_null($limit)) {
+            $builder->limit($limit);
 
-            $builder->offset($this->offset);
+            if (!is_null($offset)) {
+                $builder->offset($offset);
+            }
         }
 
         return $builder;
@@ -201,11 +205,9 @@ class Selector
         if (is_null($this->modifiedBuilder)) {
             $builder = clone $this->originalBuilder;
 
-            $this->applyFilters($builder);
+            $this->applyFilters($builder, $this->filters);
 
-            $this->applySorting($builder);
-
-            $this->applyPagination($builder);
+            $this->applySorting($builder, $this->sorts);
 
             $this->modifiedBuilder = $builder;
         }
@@ -219,13 +221,40 @@ class Selector
      */
     public function get($columns = ['*'])
     {
-        $builder = $this->getBuilder();
+        $builder = clone $this->getBuilder();
 
         if (data_get($builder, 'willFail') === true) {
             return collect();
         }
 
-        return $builder->get($columns);
+        return $this->applyPagination($builder, $this->limit, $this->offset)->get($columns);
+    }
+
+    /**
+     * @param null $limit
+     * @param null $offset
+     * @param array $columns
+     * @return \Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator
+     */
+    public function paginateByOffset($limit = null, $offset = null, $columns = ['*'])
+    {
+        $builder = clone $this->getBuilder();
+
+        $limit = !is_null($limit) ? $limit : (!is_null($this->limit) ? $this->limit : 15);
+
+        $offset = !is_null($offset) ? $offset : $this->offset;
+
+        if (data_get($builder, 'willFail') === true) {
+            $items = collect();
+
+            $itemsTotal = 0;
+        } else {
+            $items = $this->applyPagination($builder, $limit, $offset)->get($columns);
+
+            $itemsTotal = $builder->toBase()->getCountForPagination();
+        }
+
+        return new ByOffsetLengthAwarePaginator($items, $itemsTotal, $limit, $offset);
     }
 
     /**

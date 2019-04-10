@@ -5,7 +5,6 @@ namespace Jchedev\Laravel\Eloquent\Services;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Validator;
-use Jchedev\Laravel\Classes\Validation\Validator as CustomValidator;
 
 abstract class Service
 {
@@ -169,7 +168,7 @@ abstract class Service
      */
     protected function validator(array $data, array $rules): Validator
     {
-        return new CustomValidator(app('translator'), $data, $rules);
+        return \Validator::make($data, $rules);
     }
 
     /**

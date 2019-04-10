@@ -2,8 +2,6 @@
 
 namespace Jchedev\Laravel\Classes\Validation;
 
-use Illuminate\Validation\ClosureValidationRule;
-
 class Validator extends \Illuminate\Validation\Validator
 {
     protected $extra = [];
@@ -15,8 +13,8 @@ class Validator extends \Illuminate\Validation\Validator
      */
     protected function validateUsingCustomRule($attribute, $value, $rule)
     {
-        if (is_a($rule, ClosureValidationRule::class)) {
-            $rule = new Validation\ClosureValidationRule($rule->callback, $this);
+        if (is_a($rule, \Illuminate\Validation\ClosureValidationRule::class)) {
+            $rule = new ClosureValidationRule($rule->callback, $this);
         }
 
         parent::validateUsingCustomRule($attribute, $value, $rule);

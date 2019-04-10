@@ -134,13 +134,7 @@ abstract class Service
             $validator->validate();
         }
 
-        $data = array_only($validator->getData(), array_keys($validator->getRules()));
-
-        if (is_a($validator, CustomValidator::class)) {
-            $data = array_merge($data, $validator->getExtra());
-        }
-
-        return $data;
+        return array_only($validator->getData(), array_keys($validator->getRules()));
     }
 
     /**

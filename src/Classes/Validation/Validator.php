@@ -4,39 +4,34 @@ namespace Jchedev\Laravel\Classes\Validation;
 
 class Validator extends \Illuminate\Validation\Validator
 {
-    protected $extra = [];
-
     /**
-     * @param string $attribute
-     * @param mixed $value
-     * @param \Illuminate\Contracts\Validation\Rule $rule
+     * @param $attribute
+     * @param $value
+     * @param $parameters
+     * @return bool
      */
-    protected function validateUsingCustomRule($attribute, $value, $rule)
+    public function validateConvert($attribute, $value, $parameters)
     {
-        if (is_a($rule, \Illuminate\Validation\ClosureValidationRule::class)) {
-            $rule = new ClosureValidationRule($rule->callback, $this);
+        if (is_callable($closure = array_get($parameters, 0))) {
+            if (($value = $closure($value)) === false) {
+                return false;
+            }
+
+            $this->data[$attribute] = $value;
         }
 
-        parent::validateUsingCustomRule($attribute, $value, $rule);
+        return true;
     }
 
     /**
-     * @param $key
-     * @param $value
-     * @return $this
+     * @param $message
+     * @param $attribute
+     * @param $rule
+     * @param $parameters
+     * @return mixed
      */
-    public function setExtra($key, $value)
+    protected function replaceConvert($message, $attribute, $rule, $parameters)
     {
-        $this->extra[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getExtra()
-    {
-        return $this->extra;
+        return 'Invalid ' . $attribute;
     }
 }

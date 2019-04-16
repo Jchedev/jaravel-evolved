@@ -19,12 +19,13 @@ abstract class Service
     abstract protected function model(): Model;
 
     /**
-     * @return bool
+     * @return array
      */
-    public function requiresValidation()
-    {
-        return $this->withValidation;
-    }
+    abstract protected function validationRules(): array;
+
+    /*
+     * Create (one or many), Update, Delete
+     */
 
     /**
      * @param array $data
@@ -39,6 +40,20 @@ abstract class Service
         $validatedData = $this->validate($validator);
 
         return $this->onCreate($validatedData, $options);
+    }
+
+    /**
+     * @param array $attributes
+     * @param array $options
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    protected function onCreate(array $attributes, array $options = []): Model
+    {
+        $model = clone $this->model();
+
+        $model->fill($attributes)->save($options);
+
+        return $model;
     }
 
     /**
@@ -63,36 +78,6 @@ abstract class Service
     }
 
     /**
-     * @param \Illuminate\Database\Eloquent\Model $model
-     * @param array $data
-     * @param array $options
-     * @return mixed
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function update(Model $model, array $data, array $options = [])
-    {
-        $validator = $this->validatorForUpdate($data);
-
-        $validatedData = $this->validate($validator);
-
-        return $this->onUpdate($model, $validatedData, $options);
-    }
-
-    /**
-     * @param array $attributes
-     * @param array $options
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    protected function onCreate(array $attributes, array $options = []): Model
-    {
-        $model = clone $this->model();
-
-        $model->fill($attributes)->save($options);
-
-        return $model;
-    }
-
-    /**
      * @param array $arrayOfAttributes
      * @param array $options
      * @return \Illuminate\Database\Eloquent\Collection
@@ -112,16 +97,36 @@ abstract class Service
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
+     * @param array $data
+     * @param array $options
+     * @return mixed
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function update(Model $model, array $data, array $options = [])
+    {
+        $validator = $this->validatorForUpdate($model, $data);
+
+        $validatedData = $this->validate($validator);
+
+        return $this->onUpdate($model, $validatedData, $options);
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
      * @param array $attributes
      * @param array $options
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function onUpdate(Model $model, array $attributes, array $options = [])
+    protected function onUpdate(Model $model, array $attributes, array $options = []): Model
     {
         $model->fill($attributes)->save($options);
 
         return $model;
     }
+
+    /*
+     * Validation
+     */
 
     /**
      * @param \Illuminate\Validation\Validator $validator
@@ -130,29 +135,11 @@ abstract class Service
      */
     protected function validate(Validator $validator)
     {
-        if ($this->requiresValidation()) {
+        if ($this->withValidation) {
             $validator->validate();
         }
 
         return array_only($validator->getData(), array_keys($validator->getRules()));
-    }
-
-    /**
-     * @param array $data
-     * @return \Illuminate\Validation\Validator
-     */
-    protected function validatorForCreate(array $data = []): Validator
-    {
-        return $this->validator($data, $this->validationRulesForCreate());
-    }
-
-    /**
-     * @param array $data
-     * @return \Illuminate\Validation\Validator
-     */
-    protected function validatorForUpdate(array $data = []): Validator
-    {
-        return $this->validator($data, $this->validationRulesForUpdate());
     }
 
     /**
@@ -166,18 +153,40 @@ abstract class Service
     }
 
     /**
-     * @return array
+     * @param array $data
+     * @return \Illuminate\Validation\Validator
      */
-    protected function validationRulesForCreate(): array
+    protected function validatorForCreate(array $data = []): Validator
     {
-        return [];
+        $rules = $this->validationRulesForCreate();
+
+        return $this->validator($data, $rules);
+    }
+
+    /**
+     * @param array $data
+     * @return \Illuminate\Validation\Validator
+     */
+    protected function validatorForUpdate(Model $model, array $data = []): Validator
+    {
+        $rules = array_only($this->validationRulesForUpdate($model), array_keys($data));
+
+        return $this->validator($data, $rules);
     }
 
     /**
      * @return array
      */
-    protected function validationRulesForUpdate(): array
+    protected function validationRulesForCreate(): array
     {
-        return $this->validationRulesForCreate();
+        return $this->validationRules();
+    }
+
+    /**
+     * @return array
+     */
+    protected function validationRulesForUpdate(Model $model): array
+    {
+        return $this->validationRules();
     }
 }

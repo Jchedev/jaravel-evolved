@@ -61,4 +61,18 @@ abstract class Model extends EloquentModel
     {
         return new Collection($models);
     }
+
+    /**
+     * @param string $key
+     * @param mixed $value
+     * @return mixed
+     */
+    public function setAttribute($key, $value)
+    {
+        if ($this->hasSetMutator($key) === false && is_a($value, \Illuminate\Database\Eloquent\Model::class)) {
+            $value = $value->getKey();
+        }
+
+        return parent::setAttribute($key, $value);
+    }
 }

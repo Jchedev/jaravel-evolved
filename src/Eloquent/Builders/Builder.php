@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
+use Jchedev\Laravel\Traits\HasReference;
 
 class Builder extends EloquentBuilder
 {
@@ -26,6 +27,44 @@ class Builder extends EloquentBuilder
         }
 
         return parent::select($columns);
+    }
+
+    /**
+     * @param mixed $id
+     * @param array $columns
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
+    public function find($id, $columns = ['*'])
+    {
+        if (in_array(HasReference::class, class_uses($this->model)) && $this->model->canBeFoundThroughReference === true) {
+            if (is_string($id) && $this->model::isReference($id)) {
+                return $this->where($this->model->referenceColumn, '=', $id)->first($columns);
+            }
+        }
+
+        return parent::find($id, $columns);
+    }
+
+    /**
+     * @param array|\Illuminate\Contracts\Support\Arrayable $ids
+     * @param array $columns
+     * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Query\Builder[]|\Illuminate\Support\Collection|\Jchedev\Laravel\Eloquent\Builders\Builder[]
+     */
+    public function findMany($ids, $columns = ['*'])
+    {
+        if (in_array(HasReference::class, class_uses($this->model)) && $this->model->canBeFoundThroughReference === true) {
+            if (!empty($ids)) {
+                $findBy = ['reference' => [], 'key' => []];
+
+                foreach ($ids as $id) {
+                    $findBy[(is_string($id) && $this->model::isReference($id)) ? 'reference' : 'key'][] = $id;
+                }
+
+                return $this->whereKey($findBy['key'])->orWhereIn($this->model->referenceColumn, $findBy['reference'])->get($columns);
+            }
+        }
+
+        return parent::findMany($ids, $columns);
     }
 
     /**

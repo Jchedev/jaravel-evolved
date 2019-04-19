@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Classes;
+namespace Jchedev\Laravel\Classes\Validation;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Validator;

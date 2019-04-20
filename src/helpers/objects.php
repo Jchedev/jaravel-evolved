@@ -33,3 +33,16 @@ function get_class_namespace($object)
 
     return null;
 }
+
+/**
+ * @param $variable
+ * @return string
+ */
+function get_variable_type($variable)
+{
+    if (is_object($variable) && ($variable instanceof Closure)) {
+        return 'closure';
+    }
+
+    return gettype($variable);
+}

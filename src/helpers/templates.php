@@ -6,7 +6,7 @@
  * @param $html
  * @return mixed
  */
-function    minify_html($html)
+function minify_html($html)
 {
     $html = preg_replace('/<!--([^\[|(<!)].*)/', '', $html);
 

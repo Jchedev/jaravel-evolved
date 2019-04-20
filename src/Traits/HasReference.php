@@ -41,6 +41,6 @@ trait HasReference
      */
     public function generateReference()
     {
-        return Str::uuid();
+        return \Illuminate\Support\Str::uuid();
     }
 }

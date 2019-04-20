@@ -1,6 +1,6 @@
 <?php
 
-namespace Jchedev\Laravel\Classes\Selector;
+namespace Jchedev\Laravel\Classes\Selectors;
 
 use Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator;
 

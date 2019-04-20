@@ -6,7 +6,7 @@
  * @param $value
  * @return string
  */
-function    sanitize_string($value)
+function sanitize_string($value)
 {
     if (!is_null($value)) {
         $value = trim($value);
@@ -23,7 +23,7 @@ function    sanitize_string($value)
  * @param string $false
  * @return string
  */
-function    boolean_to_string($value, $true = 'true', $false = 'false')
+function boolean_to_string($value, $true = 'true', $false = 'false')
 {
     return ($value) ? $true : $false;
 }
@@ -34,7 +34,7 @@ function    boolean_to_string($value, $true = 'true', $false = 'false')
  * @param $value
  * @return array|null
  */
-function    null_if_empty($value)
+function null_if_empty($value)
 {
     if (is_array($value)) {
         foreach ($value as $key => $line) {
@@ -54,7 +54,7 @@ function    null_if_empty($value)
  * @param string $convert_in
  * @return bool
  */
-function    time_duration($string, $convert_in = 'second')
+function time_duration($string, $convert_in = 'second')
 {
     if (preg_match('/^([0-9]+) (.*)$/', $string, $parts) == 0 || ($time_multiplier = time_multiplier($parts[2], $convert_in)) === false) {
         return false;
@@ -70,7 +70,7 @@ function    time_duration($string, $convert_in = 'second')
  * @param $to
  * @return bool|int
  */
-function    time_multiplier($from, $to)
+function time_multiplier($from, $to)
 {
     $from = str_singular(strtolower($from));
 
@@ -116,7 +116,7 @@ function    time_multiplier($from, $to)
  * @param $column
  * @return mixed
  */
-function    table_column($table, $column)
+function table_column($table, $column)
 {
     if (is_string($column) === false || strstr($column, '.') !== false) {
         return $column;

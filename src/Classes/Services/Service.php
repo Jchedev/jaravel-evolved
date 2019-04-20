@@ -1,6 +1,6 @@
 <?php
 
-namespace Jchedev\Laravel\Eloquent\Services;
+namespace Jchedev\Laravel\Classes\Services;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;

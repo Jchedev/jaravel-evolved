@@ -75,4 +75,13 @@ abstract class Model extends EloquentModel
 
         return parent::setAttribute($key, $value);
     }
+
+    /**
+     * @param $attribute
+     * @return bool
+     */
+    public function hasAttribute($attribute)
+    {
+        return array_key_exists($attribute, $this->attributes);
+    }
 }

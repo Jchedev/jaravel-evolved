@@ -90,7 +90,7 @@ class TransformRule
             return $model;
         }
 
-        $this->errorMessage = 'Invalid value';
+        $this->errorMessage = 'Invalid ' . get_class_basename($class);
 
         return false;
     }

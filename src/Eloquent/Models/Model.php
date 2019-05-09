@@ -9,6 +9,14 @@ use Jchedev\Laravel\Eloquent\Collections\Collection;
 abstract class Model extends EloquentModel
 {
     /**
+     * @return mixed
+     */
+    static function routeKeyName()
+    {
+        return with(new static)->getRouteKeyName();
+    }
+    
+    /**
      * Allow the call of getTable() in a static way
      *
      * @return mixed

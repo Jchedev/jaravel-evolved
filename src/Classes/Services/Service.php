@@ -71,7 +71,32 @@ abstract class Service
      */
     public function createMany(array $arrayOfAttributes, array $options = [])
     {
+        $errors = [];
 
+        $validatedAttributes = [];
+
+        $validator = $this->validatorForCreate([]);
+
+        foreach ($arrayOfAttributes as $key => $attributes) {
+            try {
+                if (!is_array($attributes)) {
+                    throw new \Exception(trans('validation.array', ['attribute' => 'key ' . $key]));
+                }
+                $validatedAttributes[] = $this->validate($validator->setData($attributes));
+            }
+            catch (\Exception $exception) {
+                if (!isset($errors[$key])) {
+                    $errors[$key] = [];
+                }
+                $errors[$key] += is_a($exception, ValidationException::class) ? $exception->errors() : [$exception->getMessage()];
+            }
+        }
+
+        if (count($errors) != 0) {
+            $this->throwValidationException($errors);
+        }
+
+        return $this->onCreateMany($validatedAttributes);
     }
 
     /**

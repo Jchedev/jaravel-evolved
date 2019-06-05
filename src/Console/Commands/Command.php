@@ -33,6 +33,10 @@ abstract class Command extends \Illuminate\Console\Command
 
     /**
      * The constructor  check if we want to create a log object based on $_with_log
+     * Verbosity level:
+     *  -v :    Display errors + execution details + query count (when applicable) but NOT the exception trace
+     *  -vv :   Display errors + execution details + query count + query list but NOT the exception trace
+     *  -vvv :  Display errors + execution details + query count + query list + exception trace
      */
     public function __construct()
     {
@@ -111,9 +115,13 @@ abstract class Command extends \Illuminate\Console\Command
      */
     protected function onError(\Exception $exception)
     {
-        $this->error('An error occurred: ' . $exception->getMessage());
+        $this->error('An error occurred: ' . $exception->getMessage(), $this->parseVerbosity('v'));
 
         $this->return['error'] = $exception->getMessage();
+
+        if (in_array($this->output->getVerbosity(), [$this->parseVerbosity('v'), $this->parseVerbosity('vv')])) {
+            return false;
+        }
     }
 
     /**

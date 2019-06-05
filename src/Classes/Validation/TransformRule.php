@@ -22,7 +22,7 @@ class TransformRule
         $transformer = array_shift($parameters);
 
         if (is_callable($transformer)) {
-            $newValue = $this->validateThroughClosure($transformer, $value, $validator);
+            $newValue = $this->validateThroughClosure($transformer, $attribute, $value, $validator);
         } elseif (is_subclass_of($transformer, Model::class)) {
             $newValue = $this->validateModel($transformer, $value, $validator);
         } else {
@@ -46,10 +46,10 @@ class TransformRule
      * @param $validator
      * @return mixed
      */
-    protected function validateThroughClosure(callable $closure, $value, $validator)
+    protected function validateThroughClosure(callable $closure, $attribute, $value, $validator)
     {
         try {
-            return $closure($value, function ($message) {
+            return $closure($attribute, $value, function ($message) {
                 throw new \Exception($message);
             }, $validator);
         }

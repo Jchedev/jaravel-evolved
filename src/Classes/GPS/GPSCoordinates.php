@@ -1,6 +1,6 @@
 <?php
 
-namespace Jchedev\Laravel\Classes;
+namespace Jchedev\Laravel\Classes\GPS;
 
 class GPSCoordinates
 {

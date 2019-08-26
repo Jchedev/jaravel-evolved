@@ -36,7 +36,7 @@ abstract class Service
      * @return false|\Illuminate\Database\Eloquent\Model
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function create(array $attributes, array $options = [])
+    final public function create(array $attributes, array $options = [])
     {
         $validator = $this->validatorForCreate($attributes);
 
@@ -69,7 +69,7 @@ abstract class Service
      * @return \Illuminate\Database\Eloquent\Collection
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function createMany(array $arrayOfAttributes, array $options = [])
+    final public function createMany(array $arrayOfAttributes, array $options = [])
     {
         $errors = [];
 
@@ -124,7 +124,7 @@ abstract class Service
      * @return mixed
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function update(Model $model, array $attributes, array $options = [])
+    final public function update(Model $model, array $attributes, array $options = [])
     {
         $validator = $this->validatorForUpdate($model, $attributes);
 
@@ -146,14 +146,46 @@ abstract class Service
         return $model;
     }
 
-    public function updateMany(Collection $collection, array $attributes, array $options = [])
+    final public function updateMany(Collection $collection, array $attributes, array $options = [])
     {
-
+        // todo
     }
 
     protected function onUpdateMany(Collection $collection, array $attributes, array $options = []): Collection
     {
+        // todo
+    }
 
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param array $options
+     * @return bool|null
+     * @throws \Exception
+     */
+    final public function delete(Model $model, array $options = [])
+    {
+        return $this->onDelete($model, $options);
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param array $options
+     * @return bool|null
+     * @throws \Exception
+     */
+    protected function onDelete(Model $model, array $options = [])
+    {
+        return $model->delete();
+    }
+
+    final public function deleteMany(Collection $collection, array $options = [])
+    {
+        // todo
+    }
+
+    protected function onDeleteMany(Collection $collection, array $options = [])
+    {
+        // todo
     }
 
     /**

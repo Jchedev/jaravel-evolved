@@ -71,6 +71,29 @@ abstract class Model extends EloquentModel
     }
 
     /**
+     * @param $event
+     * @return $this
+     */
+    public function applyEvent($event)
+    {
+        $this->fireModelEvent($event);
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function applyTimestamps()
+    {
+        if ($this->usesTimestamps()) {
+            $this->updateTimestamps();
+        }
+
+        return $this;
+    }
+
+    /**
      * @param string $key
      * @param mixed $value
      * @return mixed

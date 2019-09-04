@@ -96,7 +96,9 @@ abstract class Service
             $this->throwValidationException($errors);
         }
 
-        return $this->onCreateMany($validatedAttributes);
+        return DB::transaction(function () use ($validatedAttributes) {
+            return $this->onCreateMany($validatedAttributes);
+        });
     }
 
     /**

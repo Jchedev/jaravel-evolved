@@ -30,6 +30,41 @@ class Builder extends EloquentBuilder
     }
 
     /**
+     * @param array $arrayOfAttributes
+     * @return array
+     */
+    public function createMany(array $arrayOfAttributes = [])
+    {
+        $collection = $this->getModel()->newCollection([]);
+
+        foreach ($arrayOfAttributes as &$attributes) {
+            $newInstance = $this->newModelInstance($attributes);
+
+            $newInstance->applyEvent('creating');
+
+            $newInstance->applyTimestamps();
+
+            $attributes = $newInstance->getAttributes();
+
+            $collection[] = $newInstance;
+        }
+
+        if ($this->getModel()->getIncrementing()) {
+            $this->insert($arrayOfAttributes);
+
+            $lastId = $this->getConnection()->getPdo()->lastInsertId();
+
+            foreach ($collection as $item) {
+                $item->setAttribute($item->getKeyName(), $lastId++);
+            }
+        } else {
+            die('not handled');
+        }
+
+        return $collection;
+    }
+    
+    /**
      * @param mixed $id
      * @param array $columns
      * @return \Illuminate\Database\Eloquent\Model|null

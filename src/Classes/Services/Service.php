@@ -43,11 +43,13 @@ abstract class Service
 
         $validatedData = $this->validate($validator);
 
-        $finalAttributes = $this->beforeCreating($validatedData);
+        return DB::transaction(function () use ($validatedData) {
+            $finalAttributes = $this->beforeCreating($validatedData);
 
-        $model = $this->performCreate($finalAttributes);
+            $model = $this->performCreate($finalAttributes);
 
-        return $this->afterCreating($model);
+            return $this->afterCreating($model);
+        });
     }
 
     /**
@@ -93,13 +95,15 @@ abstract class Service
 
         $validatedData = $this->validateMany($validators);
 
-        $finalAttributes = $this->beforeCreatingMany($validatedData);
+        return DB::transaction(function () use ($validatedData) {
+            $finalAttributes = $this->beforeCreatingMany($validatedData);
 
-        $collection = DB::transaction(function () use ($finalAttributes) {
-            return $this->performCreateMany($finalAttributes);
+            $collection = DB::transaction(function () use ($finalAttributes) {
+                return $this->performCreateMany($finalAttributes);
+            });
+
+            return $this->afterCreatingMany($collection);
         });
-
-        return $this->afterCreatingMany($collection);
     }
 
     /**
@@ -149,11 +153,13 @@ abstract class Service
 
         $validatedData = $this->validate($validator);
 
-        $finalAttributes = $this->beforeUpdating($model, $validatedData);
+        return DB::transaction(function () use ($model, $validatedData) {
+            $finalAttributes = $this->beforeUpdating($model, $validatedData);
 
-        $model = $this->performUpdate($model, $finalAttributes);
+            $model = $this->performUpdate($model, $finalAttributes);
 
-        return $this->afterUpdating($model);
+            return $this->afterUpdating($model);
+        });
     }
 
     /**
@@ -180,7 +186,6 @@ abstract class Service
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
-     * @param array $options
      * @return \Illuminate\Database\Eloquent\Model
      */
     protected function afterUpdating(Model $model): Model
@@ -203,13 +208,15 @@ abstract class Service
 
         $validatedData = $this->validateMany($validators);
 
-        $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData);
+        return DB::transaction(function () use ($collection, $validatedData) {
+            $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData);
 
-        $collection = DB::transaction(function () use ($collection, $finalAttributes) {
-            return $this->performUpdateMany($collection, $finalAttributes);
+            $collection = DB::transaction(function () use ($collection, $finalAttributes) {
+                return $this->performUpdateMany($collection, $finalAttributes);
+            });
+
+            return $this->afterUpdatingMany($collection);
         });
-
-        return $this->afterUpdatingMany($collection);
     }
 
     /**
@@ -259,11 +266,13 @@ abstract class Service
      */
     final public function delete(Model $model)
     {
-        $this->beforeDeleting($model);
+        DB::transaction(function () use ($model) {
+            $this->beforeDeleting($model);
 
-        $this->performDelete($model);
+            $this->performDelete($model);
 
-        $this->afterDeleting($model);
+            $this->afterDeleting($model);
+        });
     }
 
     /**
@@ -295,13 +304,15 @@ abstract class Service
      */
     final public function deleteMany(Collection $collection)
     {
-        $this->beforeDeletingMany($collection);
-
         DB::transaction(function () use ($collection) {
-            $this->performDeleteMany($collection);
-        });
+            $this->beforeDeletingMany($collection);
 
-        $this->afterDeletingMany($collection);
+            DB::transaction(function () use ($collection) {
+                $this->performDeleteMany($collection);
+            });
+
+            $this->afterDeletingMany($collection);
+        });
     }
 
     /**

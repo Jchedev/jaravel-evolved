@@ -31,64 +31,59 @@ abstract class Service
      */
 
     /**
-     * @param array $data
-     * @param array $options
-     * @return false|\Illuminate\Database\Eloquent\Model
+     * Create one model
+     *
+     * @param array $attributes
+     * @return \Illuminate\Database\Eloquent\Model
      * @throws \Illuminate\Validation\ValidationException
      */
-    final public function create(array $attributes, array $options = []): Model
+    final public function create(array $attributes): Model
     {
         $validator = $this->validatorForCreate($attributes);
 
         $validatedData = $this->validate($validator);
 
-        $finalAttributes = $this->beforeCreating($validatedData, $options);
+        $finalAttributes = $this->beforeCreating($validatedData);
 
-        $model = $this->performCreate($finalAttributes, $options);
+        $model = $this->performCreate($finalAttributes);
 
-        return $this->afterCreating($model, $options);
+        return $this->afterCreating($model);
     }
 
     /**
+     * Placeholder for adding logic BEFORE the create is executed
+     *
      * @param array $attributes
-     * @param array $options
      * @return array
      */
-    protected function beforeCreating(array $attributes, array $options): array
+    protected function beforeCreating(array $attributes): array
     {
         return $attributes;
     }
 
     /**
      * @param array $attributes
-     * @param array $options
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function performCreate(array $attributes, array $options): Model
+    protected function performCreate(array $attributes): Model
     {
-        $model = clone $this->model();
-
-        $model->fill($attributes)->save($options);
-
-        return $model;
+        return $this->model()->create($attributes);
     }
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function afterCreating(Model $model, array $options): Model
+    protected function afterCreating(Model $model): Model
     {
         return $model;
     }
 
     /**
-     * @param array $data
-     * @param array $options
+     * @param array $arrayOfAttributes
      * @return \Illuminate\Database\Eloquent\Collection
-     * @throws \Illuminate\Validation\ValidationException
      */
-    final public function createMany(array $arrayOfAttributes, array $options = []): Collection
+    final public function createMany(array $arrayOfAttributes): Collection
     {
         $validators = [];
 
@@ -98,24 +93,23 @@ abstract class Service
 
         $validatedData = $this->validateMany($validators);
 
-        $finalAttributes = $this->beforeCreatingMany($validatedData, $options);
+        $finalAttributes = $this->beforeCreatingMany($validatedData);
 
-        $collection = DB::transaction(function () use ($finalAttributes, $options) {
-            return $this->performCreateMany($finalAttributes, $options);
+        $collection = DB::transaction(function () use ($finalAttributes) {
+            return $this->performCreateMany($finalAttributes);
         });
 
-        return $this->afterCreatingMany($collection, $options);
+        return $this->afterCreatingMany($collection);
     }
 
     /**
-     * @param array $attributes
-     * @param array $options
+     * @param array $arrayOfAttributes
      * @return array
      */
-    protected function beforeCreatingMany(array $arrayOfAttributes, array $options): array
+    protected function beforeCreatingMany(array $arrayOfAttributes): array
     {
         foreach ($arrayOfAttributes as $key => $attributes) {
-            $arrayOfAttributes[$key] = $this->beforeCreating($attributes, $options);
+            $arrayOfAttributes[$key] = $this->beforeCreating($attributes);
         }
 
         return $arrayOfAttributes;
@@ -123,20 +117,18 @@ abstract class Service
 
     /**
      * @param array $arrayOfAttributes
-     * @param array $options
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    protected function performCreateMany(array $arrayOfAttributes, array $options): Collection
+    protected function performCreateMany(array $arrayOfAttributes): Collection
     {
         return $this->model()->createMany($arrayOfAttributes);
     }
 
     /**
      * @param \Illuminate\Database\Eloquent\Collection $collection
-     * @param array $options
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    protected function afterCreatingMany(Collection $collection, array $options): Collection
+    protected function afterCreatingMany(Collection $collection): Collection
     {
         return $collection;
     }
@@ -147,31 +139,29 @@ abstract class Service
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
-     * @param array $data
-     * @param array $options
-     * @return mixed
+     * @param array $attributes
+     * @return \Illuminate\Database\Eloquent\Model
      * @throws \Illuminate\Validation\ValidationException
      */
-    final public function update(Model $model, array $attributes, array $options = [])
+    final public function update(Model $model, array $attributes)
     {
         $validator = $this->validatorForUpdate($model, $attributes);
 
         $validatedData = $this->validate($validator);
 
-        $finalAttributes = $this->beforeUpdating($model, $validatedData, $options);
+        $finalAttributes = $this->beforeUpdating($model, $validatedData);
 
-        $model = $this->performUpdate($model, $finalAttributes, $options);
+        $model = $this->performUpdate($model, $finalAttributes);
 
-        return $this->afterUpdating($model, $options);
+        return $this->afterUpdating($model);
     }
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
      * @param array $attributes
-     * @param array $options
      * @return array
      */
-    protected function beforeUpdating(Model $model, array $attributes, array $options): array
+    protected function beforeUpdating(Model $model, array $attributes): array
     {
         return $attributes;
     }
@@ -179,12 +169,11 @@ abstract class Service
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
      * @param array $attributes
-     * @param array $options
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function performUpdate(Model $model, array $attributes, array $options): Model
+    protected function performUpdate(Model $model, array $attributes): Model
     {
-        $model->fill($attributes)->save($options);
+        $model->update($attributes);
 
         return $model;
     }
@@ -194,7 +183,7 @@ abstract class Service
      * @param array $options
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function afterUpdating(Model $model, array $options): Model
+    protected function afterUpdating(Model $model): Model
     {
         return $model;
     }
@@ -202,10 +191,9 @@ abstract class Service
     /**
      * @param \Illuminate\Database\Eloquent\Collection $collection
      * @param array $attributes
-     * @param array $options
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    final public function updateMany(Collection $collection, array $attributes, array $options = [])
+    final public function updateMany(Collection $collection, array $attributes)
     {
         $validators = [];
 
@@ -215,38 +203,38 @@ abstract class Service
 
         $validatedData = $this->validateMany($validators);
 
-        $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData, $options);
+        $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData);
 
-        $collection = DB::transaction(function () use ($collection, $finalAttributes, $options) {
-            return $this->performUpdateMany($collection, $finalAttributes, $options);
+        $collection = DB::transaction(function () use ($collection, $finalAttributes) {
+            return $this->performUpdateMany($collection, $finalAttributes);
         });
 
-        return $this->afterUpdatingMany($collection, $options);
+        return $this->afterUpdatingMany($collection);
     }
 
     /**
-     * @param array $attributes
-     * @param array $options
+     * @param \Illuminate\Database\Eloquent\Collection $collection
+     * @param array $arrayOfAttributes
      * @return array
      */
-    protected function beforeUpdatingMany(Collection $collection, array $arrayOfAttributes, array $options): array
+    protected function beforeUpdatingMany(Collection $collection, array $arrayOfAttributes): array
     {
         foreach ($collection as $key => $model) {
-            $arrayOfAttributes[$key] = $this->beforeUpdating($model, $arrayOfAttributes[$key], $options);
+            $arrayOfAttributes[$key] = $this->beforeUpdating($model, $arrayOfAttributes[$key]);
         }
 
         return $arrayOfAttributes;
     }
 
     /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
      * @param array $arrayOfAttributes
-     * @param array $options
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    protected function performUpdateMany(Collection $collection, array $arrayOfAttributes, array $options): Collection
+    protected function performUpdateMany(Collection $collection, array $arrayOfAttributes): Collection
     {
         foreach ($collection as $key => $model) {
-            $collection[$key] = $this->performUpdate($model, $arrayOfAttributes[$key], $options);
+            $collection[$key] = $this->performUpdate($model, $arrayOfAttributes[$key]);
         }
 
         return $collection;
@@ -254,10 +242,9 @@ abstract class Service
 
     /**
      * @param \Illuminate\Database\Eloquent\Collection $collection
-     * @param array $options
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    protected function afterUpdatingMany(Collection $collection, array $options): Collection
+    protected function afterUpdatingMany(Collection $collection): Collection
     {
         return $collection;
     }
@@ -268,60 +255,94 @@ abstract class Service
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
-     * @param array $options
-     * @return bool|null
      * @throws \Exception
      */
-    final public function delete(Model $model, array $options = [])
+    final public function delete(Model $model)
     {
-        return $this->performDelete($model, $options);
+        $this->beforeDeleting($model);
+
+        $this->performDelete($model);
+
+        $this->afterDeleting($model);
     }
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
-     * @param array $options
+     */
+    protected function beforeDeleting(Model $model)
+    {
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
      * @return bool|null
      * @throws \Exception
      */
-    protected function performDelete(Model $model, array $options)
+    protected function performDelete(Model $model)
     {
         return $model->delete();
     }
 
     /**
-     * @param \Illuminate\Database\Eloquent\Collection $collection
-     * @param array $options
+     * @param \Illuminate\Database\Eloquent\Model $model
      */
-    final public function deleteMany(Collection $collection, array $options = [])
+    protected function afterDeleting(Model $model)
     {
-        return DB::transaction(function () use ($collection, $options) {
-            return $this->performDeleteMany($collection, $options);
-        });
     }
 
     /**
      * @param \Illuminate\Database\Eloquent\Collection $collection
-     * @param array $options
-     * @return bool
+     */
+    final public function deleteMany(Collection $collection)
+    {
+        $this->beforeDeletingMany($collection);
+
+        DB::transaction(function () use ($collection) {
+            $this->performDeleteMany($collection);
+        });
+
+        $this->afterDeletingMany($collection);
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
+     */
+    protected function beforeDeletingMany(Collection $collection)
+    {
+        foreach ($collection as $model) {
+            $this->beforeDeleting($model);
+        }
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
      * @throws \Exception
      */
-    protected function performDeleteMany(Collection $collection, array $options)
+    protected function performDeleteMany(Collection $collection)
     {
         foreach ($collection as $element) {
             $this->performDelete($element);
         }
+    }
 
-        return true;
+    /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
+     */
+    protected function afterDeletingMany(Collection $collection)
+    {
+        foreach ($collection as $model) {
+            $this->afterDeleting($model);
+        }
     }
 
     /**
      * @param array $attributes
-     * @param string $handler
-     * @param array $options
-     * @return false|\Illuminate\Database\Eloquent\Model|mixed
+     * @param null $handler
+     * @return \Illuminate\Database\Eloquent\Model
      * @throws \Illuminate\Validation\ValidationException
+     * @throws \Exception
      */
-    public function createOrUpdate(array $attributes, $handler = null, array $options = [])
+    public function createOrUpdate(array $attributes, $handler = null)
     {
         if (is_null($handler)) {
             $handler = $this->model()->getKeyName();
@@ -330,19 +351,17 @@ abstract class Service
         $model = $this->runCreateOrUpdateHandler($handler, $attributes);
 
         if (!is_null($model)) {
-            return $this->update($model, $attributes, $options);
+            return $this->update($model, $attributes);
         }
 
-        return $this->create($attributes, $options);
+        return $this->create($attributes);
     }
 
     /**
      * @param array $arrayOfAttributes
-     * @param string $handler
-     * @param array $options
-     * @return mixed
+     * @param null $handler
      */
-    public function createOrUpdateMany(array $arrayOfAttributes, $handler = 'id', array $options = [])
+    public function createOrUpdateMany(array $arrayOfAttributes, $handler = null)
     {
         die('to redo');
         /*return DB::transaction(function () use ($arrayOfAttributes, $handler, $options) {

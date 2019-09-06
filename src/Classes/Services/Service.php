@@ -27,7 +27,7 @@ abstract class Service
     abstract protected function fields(): array;
 
     /*
-     * Create (one or many), Update, Delete
+     * Create one or many models
      */
 
     /**
@@ -36,17 +36,27 @@ abstract class Service
      * @return false|\Illuminate\Database\Eloquent\Model
      * @throws \Illuminate\Validation\ValidationException
      */
-    final public function create(array $attributes, array $options = [])
+    final public function create(array $attributes, array $options = []): Model
     {
         $validator = $this->validatorForCreate($attributes);
 
         $validatedData = $this->validate($validator);
 
-        $model = $this->onCreate($validatedData, $options);
+        $finalAttributes = $this->beforeCreating($validatedData, $options);
 
-        $this->setRelations($model, $validatedData);
+        $model = $this->performCreate($finalAttributes, $options);
 
-        return $model;
+        return $this->afterCreating($model, $options);
+    }
+
+    /**
+     * @param array $attributes
+     * @param array $options
+     * @return array
+     */
+    protected function beforeCreating(array $attributes, array $options): array
+    {
+        return $attributes;
     }
 
     /**
@@ -54,7 +64,7 @@ abstract class Service
      * @param array $options
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function onCreate(array $attributes, array $options = []): Model
+    protected function performCreate(array $attributes, array $options): Model
     {
         $model = clone $this->model();
 
@@ -64,41 +74,51 @@ abstract class Service
     }
 
     /**
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    protected function afterCreating(Model $model, array $options): Model
+    {
+        return $model;
+    }
+
+    /**
      * @param array $data
      * @param array $options
      * @return \Illuminate\Database\Eloquent\Collection
      * @throws \Illuminate\Validation\ValidationException
      */
-    final public function createMany(array $arrayOfAttributes, array $options = [])
+    final public function createMany(array $arrayOfAttributes, array $options = []): Collection
     {
-        $errors = [];
+        $validators = [];
 
-        $validatedAttributes = [];
-
-        $validator = $this->validatorForCreate([]);
-
-        foreach ($arrayOfAttributes as $key => $attributes) {
-            try {
-                if (!is_array($attributes)) {
-                    throw new \Exception(trans('validation.array', ['attribute' => 'key ' . $key]));
-                }
-                $validatedAttributes[] = $this->validate($validator->setData($attributes));
-            }
-            catch (\Exception $exception) {
-                if (!isset($errors[$key])) {
-                    $errors[$key] = [];
-                }
-                $errors[$key] += is_a($exception, ValidationException::class) ? $exception->errors() : [$exception->getMessage()];
-            }
+        foreach ($arrayOfAttributes as $attributes) {
+            $validators[] = $this->validatorForCreate($attributes);
         }
 
-        if (count($errors) != 0) {
-            $this->throwValidationException($errors);
-        }
+        $validatedData = $this->validateMany($validators);
 
-        return DB::transaction(function () use ($validatedAttributes) {
-            return $this->onCreateMany($validatedAttributes);
+        $finalAttributes = $this->beforeCreatingMany($validatedData, $options);
+
+        $collection = DB::transaction(function () use ($finalAttributes, $options) {
+            return $this->performCreateMany($finalAttributes, $options);
         });
+
+        return $this->afterCreatingMany($collection, $options);
+    }
+
+    /**
+     * @param array $attributes
+     * @param array $options
+     * @return array
+     */
+    protected function beforeCreatingMany(array $arrayOfAttributes, array $options): array
+    {
+        foreach ($arrayOfAttributes as $key => $attributes) {
+            $arrayOfAttributes[$key] = $this->beforeCreating($attributes, $options);
+        }
+
+        return $arrayOfAttributes;
     }
 
     /**
@@ -106,18 +126,24 @@ abstract class Service
      * @param array $options
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    protected function onCreateMany(array $arrayOfAttributes, array $options = []): Collection
+    protected function performCreateMany(array $arrayOfAttributes, array $options): Collection
     {
-        $model = clone $this->model();
+        return $this->model()->createMany($arrayOfAttributes);
+    }
 
-        $collection = $model->newCollection([]);
-
-        foreach ($arrayOfAttributes as $attributes) {
-            $collection->push($this->onCreate($attributes, $options));
-        }
-
+    /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
+     * @param array $options
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    protected function afterCreatingMany(Collection $collection, array $options): Collection
+    {
         return $collection;
     }
+
+    /*
+     * Update one model
+     */
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
@@ -132,7 +158,22 @@ abstract class Service
 
         $validatedData = $this->validate($validator);
 
-        return $this->onUpdate($model, $validatedData, $options);
+        $finalAttributes = $this->beforeUpdating($model, $validatedData, $options);
+
+        $model = $this->performUpdate($model, $finalAttributes, $options);
+
+        return $this->afterUpdating($model, $options);
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param array $attributes
+     * @param array $options
+     * @return array
+     */
+    protected function beforeUpdating(Model $model, array $attributes, array $options): array
+    {
+        return $attributes;
     }
 
     /**
@@ -141,22 +182,89 @@ abstract class Service
      * @param array $options
      * @return \Illuminate\Database\Eloquent\Model
      */
-    protected function onUpdate(Model $model, array $attributes, array $options = []): Model
+    protected function performUpdate(Model $model, array $attributes, array $options): Model
     {
         $model->fill($attributes)->save($options);
 
         return $model;
     }
 
-    final public function updateMany(Collection $collection, array $attributes, array $options = [])
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param array $options
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    protected function afterUpdating(Model $model, array $options): Model
     {
-        // todo
+        return $model;
     }
 
-    protected function onUpdateMany(Collection $collection, array $attributes, array $options = []): Collection
+    /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
+     * @param array $attributes
+     * @param array $options
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    final public function updateMany(Collection $collection, array $attributes, array $options = [])
     {
-        // todo
+        $validators = [];
+
+        foreach ($collection as $model) {
+            $validators[] = $this->validatorForUpdate($model, $attributes);
+        }
+
+        $validatedData = $this->validateMany($validators);
+
+        $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData, $options);
+
+        $collection = DB::transaction(function () use ($collection, $finalAttributes, $options) {
+            return $this->performUpdateMany($collection, $finalAttributes, $options);
+        });
+
+        return $this->afterUpdatingMany($collection, $options);
     }
+
+    /**
+     * @param array $attributes
+     * @param array $options
+     * @return array
+     */
+    protected function beforeUpdatingMany(Collection $collection, array $arrayOfAttributes, array $options): array
+    {
+        foreach ($collection as $key => $model) {
+            $arrayOfAttributes[$key] = $this->beforeUpdating($model, $arrayOfAttributes[$key], $options);
+        }
+
+        return $arrayOfAttributes;
+    }
+
+    /**
+     * @param array $arrayOfAttributes
+     * @param array $options
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    protected function performUpdateMany(Collection $collection, array $arrayOfAttributes, array $options): Collection
+    {
+        foreach ($collection as $key => $model) {
+            $collection[$key] = $this->performUpdate($model, $arrayOfAttributes[$key], $options);
+        }
+
+        return $collection;
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
+     * @param array $options
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    protected function afterUpdatingMany(Collection $collection, array $options): Collection
+    {
+        return $collection;
+    }
+
+    /*
+     * Delete one or many models
+     */
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
@@ -166,7 +274,7 @@ abstract class Service
      */
     final public function delete(Model $model, array $options = [])
     {
-        return $this->onDelete($model, $options);
+        return $this->performDelete($model, $options);
     }
 
     /**
@@ -175,19 +283,35 @@ abstract class Service
      * @return bool|null
      * @throws \Exception
      */
-    protected function onDelete(Model $model, array $options = [])
+    protected function performDelete(Model $model, array $options)
     {
         return $model->delete();
     }
 
+    /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
+     * @param array $options
+     */
     final public function deleteMany(Collection $collection, array $options = [])
     {
-        // todo
+        return DB::transaction(function () use ($collection, $options) {
+            return $this->performDeleteMany($collection, $options);
+        });
     }
 
-    protected function onDeleteMany(Collection $collection, array $options = [])
+    /**
+     * @param \Illuminate\Database\Eloquent\Collection $collection
+     * @param array $options
+     * @return bool
+     * @throws \Exception
+     */
+    protected function performDeleteMany(Collection $collection, array $options)
     {
-        // todo
+        foreach ($collection as $element) {
+            $this->performDelete($element);
+        }
+
+        return true;
     }
 
     /**
@@ -197,17 +321,19 @@ abstract class Service
      * @return false|\Illuminate\Database\Eloquent\Model|mixed
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function createOrUpdate(array $attributes, $handler = 'id', array $options = [])
+    public function createOrUpdate(array $attributes, $handler = null, array $options = [])
     {
+        if (is_null($handler)) {
+            $handler = $this->model()->getKeyName();
+        }
+
         $model = $this->runCreateOrUpdateHandler($handler, $attributes);
 
-        if (is_null($model)) {
-            return $this->create($attributes, $options);
-        } elseif (is_a($model, get_class($this->model()))) {
+        if (!is_null($model)) {
             return $this->update($model, $attributes, $options);
-        } else {
-            $this->throwValidationException([trans('validation.exists', ['attribute' => is_string($handler) ? $handler : 'identifier'])]);
         }
+
+        return $this->create($attributes, $options);
     }
 
     /**
@@ -218,7 +344,8 @@ abstract class Service
      */
     public function createOrUpdateMany(array $arrayOfAttributes, $handler = 'id', array $options = [])
     {
-        return DB::transaction(function () use ($arrayOfAttributes, $handler, $options) {
+        die('to redo');
+        /*return DB::transaction(function () use ($arrayOfAttributes, $handler, $options) {
             $errors = [];
 
             $models = $this->model()->newCollection();
@@ -252,40 +379,138 @@ abstract class Service
             } else {
                 return $models;
             }
-        });
+        });*/
     }
 
     /**
+     * Will return a model (or null) based on an handler logic.
+     *
      * @param $handler
      * @param array $attributes
-     * @return bool|null
+     * @return \Illuminate\Database\Eloquent\Model|null
+     * @throws \Exception
      */
-    protected function runCreateOrUpdateHandler($handler, array $attributes)
+    protected function runCreateOrUpdateHandler($handler, array $attributes): ?Model
     {
+        // Handler can be a function which should return the model found
         if (is_callable($handler)) {
             if (is_null($value = $handler($attributes))) {
                 return null;
             }
 
-            return is_a($value, get_class($this->model())) ? $value : false;
+            if (!is_a($value, get_class($this->model()))) {
+                throw new \Exception('createOrUpdate handler returns invalid result');
+            }
+
+            return $value;
         }
 
+        // Handler can be a string like "id" which will look at the attribute
         if (is_string($handler)) {
-            if (is_null($id = array_get($attributes, $handler))) {
+            if (is_null($attributeValue = array_get($attributes, $handler))) {
                 return null;
             }
 
-            return $this->model()->find($id) ?: false;
+            return $this->model()->where($handler, '=', $attributeValue)->first();
         }
 
         throw new UnexpectedArgumentException(1, ['closure', 'string']);
     }
 
     /*
-     * Validation
+     * Validation methods
      */
 
     /**
+     * Return the validator used during a Create
+     * Can be overwritten by a child to add ->after(...) to it
+     *
+     * @param array $data
+     * @return \Illuminate\Validation\Validator
+     */
+    public function validatorForCreate(array $data = []): Validator
+    {
+        $rules = $this->validationRulesForCreate();
+
+        return $this->validator($data, $rules);
+    }
+
+    /**
+     * Return the list of validation rules to check during create
+     * Can be overwritten to add rules which are specific to the creation (and not set in the fields() configuration)
+     *
+     * @return array
+     */
+    public function validationRulesForCreate(): array
+    {
+        $validationRules = [];
+
+        foreach ($this->fields() as $key => $field) {
+            if (is_array($field) || is_string($field)) {
+                // $field can be an "regular" validation rule (array or string)
+                $validationRules[$key] = (array)$field;
+            } elseif (is_a($field, Field::class)) {
+                // $field can be a Field object
+                $validationRules[$key] = $field->getValidationRules();
+            }
+        }
+
+        return $validationRules;
+    }
+
+    /**
+     * Return the validator used during an Update on a model
+     * Can be overwritten by a child to add ->after(...) to it
+     *
+     * @param array $data
+     * @return \Illuminate\Validation\Validator
+     */
+    public function validatorForUpdate(Model $model, array $data = []): Validator
+    {
+        $rules = array_only($this->validationRulesForUpdate($model), array_keys($data));
+
+        return $this->validator($data, $rules);
+    }
+
+    /**
+     * Return the list of validation rules to check during update
+     * Can be overwritten to add rules which are specific to the creation (and not set in the fields() configuration)
+     *
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return array
+     */
+    public function validationRulesForUpdate(Model $model): array
+    {
+        $validationRules = [];
+
+        foreach ($this->fields() as $key => $field) {
+            if (is_array($field) || is_string($field)) {
+                // $field can be an "regular" validation rule (array or string)
+                $validationRules[$key] = (array)$field;
+            } elseif (is_a($field, Field::class) && $field->isEditable()) {
+                // $field can be a Field object but would need to be Editable
+                $validationRules[$key] = $field->getValidationRules();
+            }
+        }
+
+        return $validationRules;
+    }
+
+    /**
+     * Return the base validator used by validatorForCreate & validatorForUpdate
+     *
+     * @param array $data
+     * @param array $rules
+     * @return \Illuminate\Validation\Validator
+     */
+    protected function validator(array $data, array $rules): Validator
+    {
+        return \Validator::make($data, $rules);
+    }
+
+    /**
+     * Execute the validation IF the validation is not disabled already
+     *
      * @param \Illuminate\Validation\Validator $validator
      * @return array
      * @throws \Illuminate\Validation\ValidationException
@@ -300,6 +525,34 @@ abstract class Service
     }
 
     /**
+     * @param array $validators
+     * @return array
+     */
+    protected function validateMany(array $validators)
+    {
+        $errors = [];
+
+        $validatedAttributes = [];
+
+        foreach ($validators as $key => $validator) {
+            try {
+                $validatedAttributes[] = $this->validate($validator);
+            }
+            catch (\Exception $exception) {
+                $errors[$key] = is_a($exception, ValidationException::class) ? $exception->errors() : [$exception->getMessage()];
+            }
+        }
+
+        if (count($errors) != 0) {
+            $this->throwValidationException($errors);
+        }
+
+        return $validatedAttributes;
+    }
+
+    /**
+     * Generate and throw a validation exception based on multiple messages
+     *
      * @param array $messages
      */
     protected function throwValidationException(array $messages)
@@ -309,96 +562,5 @@ abstract class Service
         $exception->validator->errors()->merge([$messages]);
 
         throw $exception;
-    }
-
-    /**
-     * @param array $data
-     * @param array $rules
-     * @return \Illuminate\Validation\Validator
-     */
-    protected function validator(array $data, array $rules): Validator
-    {
-        return \Validator::make($data, $rules);
-    }
-
-    /**
-     * @param array $data
-     * @return \Illuminate\Validation\Validator
-     */
-    public function validatorForCreate(array $data = []): Validator
-    {
-        $rules = $this->validationRulesForCreate();
-
-        return $this->validator($data, $rules);
-    }
-
-    /**
-     * @param array $data
-     * @return \Illuminate\Validation\Validator
-     */
-    public function validatorForUpdate(Model $model, array $data = []): Validator
-    {
-        $rules = array_only($this->validationRulesForUpdate($model), array_keys($data));
-
-        return $this->validator($data, $rules);
-    }
-
-    /**
-     * @return array
-     */
-    public function validationRulesForCreate(): array
-    {
-        $validationRules = [];
-
-        foreach ($this->fields() as $key => $field) {
-            if (is_array($field) || is_string($field)) {
-                $validationRules[$key] = (array)$field;
-            } elseif (is_a($field, Field::class)) {
-                $validationRules[$key] = $field->getValidationRules();
-            }
-        }
-
-        return $validationRules;
-    }
-
-    /**
-     * @return array
-     */
-    public function validationRulesForUpdate(Model $model): array
-    {
-        $validationRules = [];
-
-        foreach ($this->fields() as $key => $field) {
-            if (is_array($field) || is_string($field)) {
-                $validationRules[$key] = (array)$field;
-            } elseif (is_a($field, Field::class) && $field->isEditable()) {
-                $validationRules[$key] = $field->getValidationRules();
-            }
-        }
-
-        return $validationRules;
-    }
-
-    /*
-     * Other
-     */
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model $model
-     * @param array $attributes
-     */
-    protected function setRelations(Model $model, array $attributes)
-    {
-        foreach ($this->fields() as $key => $field) {
-            if (is_a($field, Field::class) && count($relations = $field->getRelations()) != 0 && !empty($attributes[$key])) {
-                foreach ($relations as $method) {
-                    if (method_exists($model, $method)) {
-                        $model->setRelation($method, $attributes[$key]);
-                    }
-                }
-            }
-        }
-
-        return $model;
     }
 }

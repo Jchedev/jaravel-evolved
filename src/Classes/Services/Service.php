@@ -48,7 +48,11 @@ abstract class Service
 
             $model = $this->performCreate($finalAttributes);
 
-            return $this->afterCreating($model);
+            $model = $this->afterCreating($model);
+
+            $this->setRelations($model, array_merge($validatedData, $finalAttributes));
+
+            return $model;
         });
     }
 
@@ -98,11 +102,15 @@ abstract class Service
         return DB::transaction(function () use ($validatedData) {
             $finalAttributes = $this->beforeCreatingMany($validatedData);
 
-            $collection = DB::transaction(function () use ($finalAttributes) {
-                return $this->performCreateMany($finalAttributes);
-            });
+            $collection = $this->performCreateMany($finalAttributes);
 
-            return $this->afterCreatingMany($collection);
+            $collection = $this->afterCreatingMany($collection);
+
+            foreach ($collection as $key => $model) {
+                $this->setRelations($model, array_merge($validatedData[$key], $finalAttributes[$key]));
+            }
+
+            return $collection;
         });
     }
 
@@ -158,7 +166,11 @@ abstract class Service
 
             $model = $this->performUpdate($model, $finalAttributes);
 
-            return $this->afterUpdating($model);
+            $model = $this->afterUpdating($model);
+
+            $this->setRelations($model, array_merge($validatedData, $finalAttributes));
+
+            return $model;
         });
     }
 
@@ -211,11 +223,15 @@ abstract class Service
         return DB::transaction(function () use ($collection, $validatedData) {
             $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData);
 
-            $collection = DB::transaction(function () use ($collection, $finalAttributes) {
-                return $this->performUpdateMany($collection, $finalAttributes);
-            });
+            $collection = $this->performUpdateMany($collection, $finalAttributes);
 
-            return $this->afterUpdatingMany($collection);
+            $collection = $this->afterUpdatingMany($collection);
+
+            foreach ($collection as $key => $model) {
+                $this->setRelations($model, array_merge($validatedData[$key], $finalAttributes[$key]));
+            }
+
+            return $collection;
         });
     }
 
@@ -592,5 +608,28 @@ abstract class Service
         $exception->validator->errors()->merge([$messages]);
 
         throw $exception;
+    }
+
+    /*
+     * Other helpers & small methods
+     */
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param array $attributes
+     */
+    protected function setRelations(Model $model, array $attributes)
+    {
+        foreach ($this->fields() as $key => $field) {
+            if (!is_a($field, Field::class) || empty($attributes[$key])) {
+                continue;
+            }
+
+            foreach ($field->getRelations() as $relationMethodName) {
+                if (method_exists($model, $relationMethodName)) {
+                    $model->setRelation($relationMethodName, $attributes[$key]);
+                }
+            }
+        }
     }
 }

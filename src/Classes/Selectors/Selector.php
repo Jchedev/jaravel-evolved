@@ -242,7 +242,7 @@ class Selector
 
         $limit = !is_null($limit) ? $limit : (!is_null($this->limit) ? $this->limit : 15);
 
-        $offset = !is_null($offset) ? $offset : $this->offset;
+        $offset = !is_null($offset) ? $offset : ($this->offset ?: 0);
 
         if (data_get($builder, 'willFail') === true) {
             $items = collect();

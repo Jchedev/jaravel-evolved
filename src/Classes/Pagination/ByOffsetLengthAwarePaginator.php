@@ -11,13 +11,17 @@ class ByOffsetLengthAwarePaginator extends LengthAwarePaginator
      */
     public function toArray()
     {
+        $previousOffset = $this->currentPage() - $this->count();
+        $nextOffset = $this->currentPage() + $this->count();
+
         return [
-            'data'        => $this->items->toArray(),
-            'total'       => $this->total(),
-            'count'       => $this->count(),
-            'limit'       => $this->perPage(),
-            'offset'      => $this->currentPage(),
-            'next_offset' => ($next_offset = ($this->currentPage() + $this->count())) >= $this->total() ? null : $next_offset
+            'data'            => $this->items->toArray(),
+            'total'           => $this->total(),
+            'count'           => $this->count(),
+            'limit'           => $this->perPage(),
+            'offset'          => $this->currentPage(),
+            'previous_offset' => ($previousOffset < 0 ? null : $previousOffset),
+            'next_offset'     => ($nextOffset >= $this->total() ? null : $nextOffset)
         ];
     }
 
@@ -30,7 +34,7 @@ class ByOffsetLengthAwarePaginator extends LengthAwarePaginator
     {
         $currentPage = !is_null($currentPage) ? $currentPage : static::resolveCurrentPage($pageName);
 
-        return $this->isValidPageNumber($currentPage) ? (int)$currentPage : 1;
+        return $this->isValidPageNumber($currentPage) ? (int)$currentPage : 0;
     }
 
     /**

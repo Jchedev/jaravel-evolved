@@ -11,8 +11,8 @@ class ByOffsetLengthAwarePaginator extends LengthAwarePaginator
      */
     public function toArray()
     {
-        $previousOffset = $this->currentPage() - $this->count();
-        $nextOffset = $this->currentPage() + $this->count();
+        $previousOffset = $this->currentPage() - $this->perPage();
+        $nextOffset = $this->currentPage() + $this->perPage();
 
         return [
             'data'            => $this->items->toArray(),

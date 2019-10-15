@@ -26,6 +26,17 @@ abstract class Service
      */
     abstract protected function fields(): array;
 
+    /**
+     * Placeholder for adding logic BEFORE the create is executed
+     *
+     * @param array $attributes
+     * @return array
+     */
+    protected function beforeAny(array $attributes): array
+    {
+        return $attributes;
+    }
+
     /*
      * Create one or many models
      */
@@ -44,6 +55,8 @@ abstract class Service
         $validatedData = $this->validate($validator);
 
         return DB::transaction(function () use ($validatedData) {
+            $validatedData = $this->beforeAny($validatedData);
+
             $finalAttributes = $this->beforeCreating($validatedData);
 
             $model = $this->performCreate($finalAttributes);
@@ -100,6 +113,10 @@ abstract class Service
         $validatedData = $this->validateMany($validators);
 
         return DB::transaction(function () use ($validatedData) {
+            foreach ($validatedData as $key => $data) {
+                $validatedData[$key] = $this->beforeAny($data);
+            }
+
             $finalAttributes = $this->beforeCreatingMany($validatedData);
 
             $collection = $this->performCreateMany($finalAttributes);
@@ -162,6 +179,8 @@ abstract class Service
         $validatedData = $this->validate($validator);
 
         return DB::transaction(function () use ($model, $validatedData) {
+            $validatedData = $this->beforeAny($validatedData);
+
             $finalAttributes = $this->beforeUpdating($model, $validatedData);
 
             $model = $this->performUpdate($model, $finalAttributes);
@@ -221,6 +240,10 @@ abstract class Service
         $validatedData = $this->validateMany($validators);
 
         return DB::transaction(function () use ($collection, $validatedData) {
+            foreach ($validatedData as $key => $data) {
+                $validatedData[$key] = $this->beforeAny($data);
+            }
+
             $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData);
 
             $collection = $this->performUpdateMany($collection, $finalAttributes);
@@ -390,42 +413,35 @@ abstract class Service
      */
     public function createOrUpdateMany(array $arrayOfAttributes, $handler = null)
     {
-        die('to redo');
-        /*return DB::transaction(function () use ($arrayOfAttributes, $handler, $options) {
-            $errors = [];
+        if (is_null($handler)) {
+            $handler = $this->model()->getKeyName();
+        }
 
-            $models = $this->model()->newCollection();
+        return DB::transaction(function () use ($arrayOfAttributes, $handler) {
+            $collection = $this->model()->newCollection();
 
-            foreach ($arrayOfAttributes as $key => $attributes) {
-                try {
-                    if (!is_array($attributes)) {
-                        throw new \Exception(trans('validation.array', ['attribute' => 'key ' . $key]));
-                    }
+            $elementsToAdd = [];
 
-                    $model = $this->runCreateOrUpdateHandler($handler, $attributes);
+            foreach ($arrayOfAttributes as $attributes) {
+                $model = $this->runCreateOrUpdateHandler($handler, $attributes);
 
-                    if (is_null($model)) {
-                        $models->push($this->create($attributes, $options));
-                    } elseif (is_a($model, get_class($this->model()))) {
-                        $models->push($this->update($model, $attributes, $options));
-                    } else {
-                        throw new \Exception(trans('validation.exists', ['attribute' => is_string($handler) ? $handler : 'identifier']));
-                    }
-                }
-                catch (\Exception $exception) {
-                    if (!isset($errors[$key])) {
-                        $errors[$key] = [];
-                    }
-                    $errors[$key] += is_a($exception, ValidationException::class) ? $exception->errors() : [$exception->getMessage()];
+                if (is_null($model)) {
+                    $elementsToAdd[] = $attributes;
+                } else {
+                    $model = $this->update($model, $attributes);
+
+                    $collection->add($model);
                 }
             }
 
-            if (count($errors) != 0) {
-                $this->throwValidationException($errors);
-            } else {
-                return $models;
+            if (count($elementsToAdd)) {
+                $newModels = $this->createMany($elementsToAdd);
+
+                $collection = $collection->merge($newModels);
             }
-        });*/
+
+            return $collection;
+        });
     }
 
     /**

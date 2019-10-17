@@ -31,11 +31,29 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
         });
 
         foreach ($perTypes as $class => $collection) {
-            if (is_null($builder = $collection->builder())) {
-                continue;
-            }
+            $builder = $collection->builder();
 
-            $builder->update($attributes, $options);
+            if (!is_null($builder)) {
+                $builder->update($attributes, $options);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public function delete()
+    {
+        $perTypes = $this->groupBy(function ($element) {
+            return get_class($element);
+        });
+
+        foreach ($perTypes as $class => $collection) {
+            $builder = $collection->builder();
+
+            if (!is_null($builder)) {
+                $builder->delete();
+            }
         }
     }
 }

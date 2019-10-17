@@ -15,7 +15,7 @@ abstract class Model extends EloquentModel
     {
         return with(new static)->getRouteKeyName();
     }
-    
+
     /**
      * Allow the call of getTable() in a static way
      *
@@ -35,6 +35,15 @@ abstract class Model extends EloquentModel
     static function tableColumn($column)
     {
         return with(new static)->getTableColumn($column);
+    }
+
+    /**
+     * @param array $models
+     * @return mixed
+     */
+    static function collection(array $models = [])
+    {
+        return with(new static)->newCollection($models);
     }
 
     /**

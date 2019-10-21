@@ -26,17 +26,6 @@ abstract class Service
      */
     abstract protected function fields(): array;
 
-    /**
-     * Placeholder for adding logic BEFORE the create is executed
-     *
-     * @param array $attributes
-     * @return array
-     */
-    protected function beforeAny(array $attributes): array
-    {
-        return $attributes;
-    }
-
     /*
      * Create one or many models
      */
@@ -55,8 +44,6 @@ abstract class Service
         $validatedData = $this->validate($validator);
 
         return DB::transaction(function () use ($validatedData) {
-            $validatedData = $this->beforeAny($validatedData);
-
             $finalAttributes = $this->beforeCreating($validatedData);
 
             $model = $this->performCreate($finalAttributes);
@@ -113,10 +100,6 @@ abstract class Service
         $validatedData = $this->validateMany($validators);
 
         return DB::transaction(function () use ($validatedData) {
-            foreach ($validatedData as $key => $data) {
-                $validatedData[$key] = $this->beforeAny($data);
-            }
-
             $finalAttributes = $this->beforeCreatingMany($validatedData);
 
             $collection = $this->performCreateMany($finalAttributes);
@@ -179,8 +162,6 @@ abstract class Service
         $validatedData = $this->validate($validator);
 
         return DB::transaction(function () use ($model, $validatedData) {
-            $validatedData = $this->beforeAny($validatedData);
-
             $finalAttributes = $this->beforeUpdating($model, $validatedData);
 
             $model = $this->performUpdate($model, $finalAttributes);
@@ -240,10 +221,6 @@ abstract class Service
         $validatedData = $this->validateMany($validators);
 
         return DB::transaction(function () use ($collection, $validatedData) {
-            foreach ($validatedData as $key => $data) {
-                $validatedData[$key] = $this->beforeAny($data);
-            }
-
             $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData);
 
             $collection = $this->performUpdateMany($collection, $finalAttributes);
@@ -406,10 +383,11 @@ abstract class Service
 
         return $this->create($attributes);
     }
-
+    
     /**
      * @param array $arrayOfAttributes
      * @param null $handler
+     * @return mixed
      */
     public function createOrUpdateMany(array $arrayOfAttributes, $handler = null)
     {

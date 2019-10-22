@@ -37,7 +37,7 @@ abstract class Service
      * @return \Illuminate\Database\Eloquent\Model
      * @throws \Illuminate\Validation\ValidationException
      */
-    final public function create(array $attributes): Model
+    public function create(array $attributes): Model
     {
         $validator = $this->validatorForCreate($attributes);
 
@@ -92,7 +92,7 @@ abstract class Service
      * @param array $arrayOfAttributes
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    final public function createMany(array $arrayOfAttributes): Collection
+    public function createMany(array $arrayOfAttributes): Collection
     {
         $validators = [];
 
@@ -160,7 +160,7 @@ abstract class Service
      * @return \Illuminate\Database\Eloquent\Model
      * @throws \Illuminate\Validation\ValidationException
      */
-    final public function update(Model $model, array $attributes)
+    public function update(Model $model, array $attributes)
     {
         $validator = $this->validatorForUpdate($model, $attributes);
 
@@ -215,7 +215,7 @@ abstract class Service
      * @param array $attributes
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    final public function updateMany(Collection $collection, array $attributes)
+    public function updateMany(Collection $collection, array $attributes)
     {
         $validators = [];
 
@@ -285,7 +285,7 @@ abstract class Service
      * @param \Illuminate\Database\Eloquent\Model $model
      * @throws \Exception
      */
-    final public function delete(Model $model)
+    public function delete(Model $model)
     {
         DB::transaction(function () use ($model) {
             $this->beforeDeleting($model);
@@ -323,7 +323,7 @@ abstract class Service
     /**
      * @param \Illuminate\Database\Eloquent\Collection $collection
      */
-    final public function deleteMany(Collection $collection)
+    public function deleteMany(Collection $collection)
     {
         DB::transaction(function () use ($collection) {
             $this->beforeDeletingMany($collection);

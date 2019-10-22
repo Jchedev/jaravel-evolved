@@ -44,13 +44,16 @@ abstract class Service
         $validatedData = $this->validate($validator);
 
         return DB::transaction(function () use ($validatedData) {
+
             $finalAttributes = $this->beforeCreating($validatedData);
 
             $model = $this->performCreate($finalAttributes);
 
-            $model = $this->afterCreating($model);
+            $model->wasRecentlyCreated = true;
 
             $this->setRelations($model, array_merge($validatedData, $finalAttributes));
+
+            $model = $this->afterCreating($model);
 
             return $model;
         });
@@ -104,11 +107,13 @@ abstract class Service
 
             $collection = $this->performCreateMany($finalAttributes);
 
-            $collection = $this->afterCreatingMany($collection);
-
             foreach ($collection as $key => $model) {
+                $model->wasRecentlyCreated = true;
+
                 $this->setRelations($model, array_merge($validatedData[$key], $finalAttributes[$key]));
             }
+
+            $collection = $this->afterCreatingMany($collection);
 
             return $collection;
         });
@@ -166,9 +171,9 @@ abstract class Service
 
             $model = $this->performUpdate($model, $finalAttributes);
 
-            $model = $this->afterUpdating($model);
-
             $this->setRelations($model, array_merge($validatedData, $finalAttributes));
+
+            $model = $this->afterUpdating($model);
 
             return $model;
         });
@@ -225,11 +230,11 @@ abstract class Service
 
             $collection = $this->performUpdateMany($collection, $finalAttributes);
 
-            $collection = $this->afterUpdatingMany($collection);
-
             foreach ($collection as $key => $model) {
                 $this->setRelations($model, array_merge($validatedData[$key], $finalAttributes[$key]));
             }
+
+            $collection = $this->afterUpdatingMany($collection);
 
             return $collection;
         });
@@ -323,9 +328,7 @@ abstract class Service
         DB::transaction(function () use ($collection) {
             $this->beforeDeletingMany($collection);
 
-            DB::transaction(function () use ($collection) {
-                $this->performDeleteMany($collection);
-            });
+            $this->performDeleteMany($collection);
 
             $this->afterDeletingMany($collection);
         });
@@ -383,7 +386,7 @@ abstract class Service
 
         return $this->create($attributes);
     }
-    
+
     /**
      * @param array $arrayOfAttributes
      * @param null $handler

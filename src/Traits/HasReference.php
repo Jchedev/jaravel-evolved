@@ -32,4 +32,12 @@ trait HasReference
     {
         return \Illuminate\Support\Str::uuid();
     }
+
+    /**
+     * @return string
+     */
+    public function getRouteKeyName()
+    {
+        return $this->referenceColumn;
+    }
 }

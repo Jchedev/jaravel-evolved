@@ -23,6 +23,16 @@ abstract class Model extends EloquentModel
     }
 
     /**
+     * Allow the call of getRouteKeyName() in a static way
+     *
+     * @return mixed
+     */
+    static function keyName()
+    {
+        return with(new static)->getKeyName();
+    }
+
+    /**
      * Allow the call of getTable() in a static way
      *
      * @return mixed

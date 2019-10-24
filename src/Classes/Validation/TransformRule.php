@@ -21,23 +21,24 @@ class TransformRule
     {
         $transformer = array_shift($parameters);
 
-        if (is_callable($transformer)) {
-            $newValue = $this->validateThroughClosure($transformer, $attribute, $value, $validator);
-        } elseif (is_subclass_of($transformer, Model::class)) {
-            $newValue = $this->validateModel($transformer, $value, $validator);
-        } else {
-            throw new \Exception('Undefined transformation for ' . $attribute);
+        try {
+            if (is_callable($transformer)) {
+                $newValue = $this->validateThroughClosure($transformer, $attribute, $value, $validator);
+            } elseif (is_subclass_of($transformer, Model::class)) {
+                $newValue = $this->validateModel($transformer, $value, array_shift($parameters));
+            } else {
+                throw new \Exception('Undefined transformation for ' . $attribute);
+            }
         }
-
-        if (!is_null($this->errorMessage)) {
-            $this->setErrorMessage($validator, $attribute);
+        catch (\Exception $e) {
+            $this->setErrorMessage($validator, $attribute, $e->getMessage());
 
             return false;
-        } else {
-            $this->updateValidatorData($validator, [$attribute => $newValue]);
-
-            return true;
         }
+
+        $this->updateValidatorData($validator, [$attribute => $newValue]);
+
+        return true;
     }
 
     /**
@@ -46,7 +47,7 @@ class TransformRule
      * @param $validator
      * @return mixed
      */
-    protected function validateThroughClosure(callable $closure, $attribute, $value, $validator)
+    protected function validateThroughClosure(callable $closure, $attribute, $value, Validator $validator)
     {
         try {
             return $closure($attribute, $value, function ($message) {
@@ -61,38 +62,29 @@ class TransformRule
     /**
      * @param $class
      * @param $value
-     * @param $validator
+     * @param null $key
      * @return null
+     * @throws \Exception
      */
-    protected function validateModel($class, $value, $validator)
+    protected function validateModel($class, $value, $key = null)
     {
+        if (is_array($value)) {
+            throw new \Exception('Array not authorized as value');
+        }
+
         if (is_null($value)) {
             return null;
         }
 
-        if (is_object($value)) {
-            if (is_a($value, $class)) {
-                return $value;
-            } else {
-                $this->errorMessage = 'Invalid model';
-
-                return false;
-            }
+        if (!is_object($value)) {
+            $value = $class::query()->where($key ?: $class::keyName(), '=', $value)->first();
         }
 
-        if (is_array($value)) {
-            $this->errorMessage = 'Array not authorized as value';
-
-            return false;
+        if (!is_a($value, $class)) {
+            throw new \Exception('Invalid ' . get_class_basename($class));
         }
 
-        if (!is_null($model = $class::find($value))) {
-            return $model;
-        }
-
-        $this->errorMessage = 'Invalid ' . get_class_basename($class);
-
-        return false;
+        return $value;
     }
 
     /**
@@ -113,34 +105,17 @@ class TransformRule
     /**
      * @param \Illuminate\Validation\Validator $validator
      * @param $attribute
+     * @param $errorMessage
      */
-    protected function setErrorMessage(Validator $validator, $attribute)
+    protected function setErrorMessage(Validator $validator, $attribute, $errorMessage)
     {
-        $translationKey = 'validation.' . $this->errorMessage;
-
-        $errorMessage = $validator->getTranslator()->trans($translationKey);
-
-        if ($errorMessage == $translationKey) {
-            $errorMessage = $this->errorMessage;
-        }
-
-        if (($extensionName = $this->findExtensionName($validator)) !== false) {
-            $validator->setCustomMessages([$attribute . '.' . $extensionName => $errorMessage]);
-        }
-    }
-
-    /**
-     * @param \Illuminate\Validation\Validator $validator
-     * @return bool|int|string
-     */
-    protected function findExtensionName(Validator $validator)
-    {
-        foreach ($validator->extensions as $name => $extension) {
+        foreach ($validator->extensions as $key => $extension) {
             if (is_string($extension) && $extension == get_class($this)) {
-                return $name;
+                $validator->setCustomMessages([
+                    $attribute . '.' . $key => $errorMessage
+                ]);
+                break;
             }
         }
-
-        return false;
     }
 }

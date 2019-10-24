@@ -8,30 +8,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
-use Jchedev\Laravel\Traits\HasReference;
 
 class Builder extends EloquentBuilder
 {
+    /*
+     * New Methods
+     */
+
     /**
-     * Attach the name of the table to each column of the select if possible
+     * Call the helper available in the package to generates the name of the column with the table name attached
      *
-     * @param array $columns
+     * @param $column
      * @return mixed
      */
-    public function select($columns = ['*'])
+    public function getModelTableColumn($column)
     {
-        $columns = !is_array($columns) ? [$columns] : $columns;
-
-        foreach ($columns as $key => $column) {
-            $columns[$key] = $this->getModelTableColumn($column);
-        }
-
-        return parent::select($columns);
+        return table_column($this->getModel()->getTable(), $column);
     }
 
     /**
      * @param array $arrayOfAttributes
-     * @return array
+     * @return array|\Illuminate\Database\Eloquent\Collection
      */
     public function createMany(array $arrayOfAttributes = [])
     {
@@ -40,9 +37,13 @@ class Builder extends EloquentBuilder
         foreach ($arrayOfAttributes as &$attributes) {
             $newInstance = $this->newModelInstance($attributes);
 
-            $newInstance->applyEvent('creating');
+            if (method_exists($newInstance, 'applyEvent')) {
+                $newInstance->applyEvent('creating');
+            }
 
-            $newInstance->applyTimestamps();
+            if (method_exists($newInstance, 'applyTimestamps')) {
+                $newInstance->applyTimestamps();
+            }
 
             $attributes = $newInstance->getAttributes();
 
@@ -58,48 +59,145 @@ class Builder extends EloquentBuilder
                 $item->setAttribute($item->getKeyName(), $lastId++);
             }
         } else {
-            die('not handled');
+            die('Model without incrementing id is not handled');
         }
 
         return $collection;
     }
-    
+
     /**
-     * @param mixed $id
-     * @param array $columns
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * Add a new whereIs method to let the builder check against a model
+     *
+     * @param $value
+     * @param string $boolean
+     * @param bool $not
+     * @return mixed
      */
-    public function find($id, $columns = ['*'])
+    public function whereIs($value, $boolean = 'and', $not = false)
     {
-        if (in_array(HasReference::class, class_uses($this->model)) && $this->model->canBeFoundThroughReference === true) {
-            if (is_string($id) && $this->model::isReference($id)) {
-                return $this->where($this->model->referenceColumn, '=', $id)->first($columns);
-            }
+        if (is_a($value, Collection::class)) {
+            $value = $value->modelKeys();
+        } elseif (is_a($value, Model::class)) {
+            $value = $value->getKey();
         }
 
-        return parent::find($id, $columns);
+        return $this->whereIn($this->getModel()->getKeyName(), (array)$value, $boolean, $not);
     }
 
     /**
-     * @param array|\Illuminate\Contracts\Support\Arrayable $ids
-     * @param array $columns
-     * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Query\Builder[]|\Illuminate\Support\Collection|\Jchedev\Laravel\Eloquent\Builders\Builder[]
+     * This count keeps in mind the limit applied to the query
+     *
+     * @param string $columns
+     * @return int
      */
-    public function findMany($ids, $columns = ['*'])
+    public function countWithLimit($columns = '*')
     {
-        if (in_array(HasReference::class, class_uses($this->model)) && $this->model->canBeFoundThroughReference === true) {
-            if (!empty($ids)) {
-                $findBy = ['reference' => [], 'key' => []];
+        $parentCount = $this->count($columns);
 
-                foreach ($ids as $id) {
-                    $findBy[(is_string($id) && $this->model::isReference($id)) ? 'reference' : 'key'][] = $id;
-                }
+        $limit = $this->getQuery()->limit;
 
-                return $this->whereKey($findBy['key'])->orWhereIn($this->model->referenceColumn, $findBy['reference'])->get($columns);
-            }
+        return (!is_null($limit) && $limit < $parentCount) ? $limit : $parentCount;
+    }
+
+    /**
+     * This chunk keeps in mind the limit applied to the query
+     *
+     * @param $count
+     * @param callable $callback
+     * @param null $limit
+     * @return bool
+     */
+    public function chunkWithLimit($count, callable $callback, $limit = null)
+    {
+        $total = 0;
+
+        if (!is_null($limit) && $limit < $count) {
+            $count = $limit;
         }
 
-        return parent::findMany($ids, $columns);
+        $this->chunk($count, function ($elements) use ($callback, &$total, $limit) {
+            $callback($elements);
+
+            $total += count($elements);
+
+            if (!is_null($limit) && $total >= $limit) {
+                return false;
+            }
+        });
+
+        return true;
+    }
+
+    /**
+     * @param $relationName
+     * @param $fields
+     * @return $this
+     */
+    public function addSelectThroughRelation($relationName, $fields)
+    {
+        $query = $this->getQueryRelation($relationName);
+
+        $this->joinThroughRelation($relationName, 'left');
+
+        foreach ($fields as $key => $value) {
+
+            if (is_a($value, Expression::class)) {
+                $raw = $value;
+            } else {
+                $as = !is_int($key) ? $value : (str_replace('.', '_', $relationName) . '_' . $value);
+
+                $column = $query->from . '.' . (!is_int($key) ? $key : $value);
+
+                $raw = DB::raw($column . ' as ' . $as);
+            }
+
+            $this->addSelect($raw);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param $relationName
+     * @param string $type
+     * @return $this
+     */
+    public function joinThroughRelation($relationName, $type = 'inner')
+    {
+        $query = $this->getQueryRelation($relationName);
+
+        $constraints = $query->wheres;
+
+        $bindings = $query->bindings['where'];
+
+        return $this->join($query->from, function (JoinClause $join) use ($constraints, $bindings) {
+
+            $join->wheres = array_merge($join->wheres, $constraints);
+
+            $join->addBinding($bindings);
+
+        }, null, null, $type);
+    }
+
+    /*
+     * Modified methods
+     */
+
+    /**
+     * Attach the name of the table to each column of the select if possible
+     *
+     * @param array $columns
+     * @return mixed
+     */
+    public function select($columns = ['*'])
+    {
+        $columns = !is_array($columns) ? [$columns] : $columns;
+
+        foreach ($columns as $key => $column) {
+            $columns[$key] = $this->getModelTableColumn($column);
+        }
+
+        return parent::select($columns);
     }
 
     /**
@@ -144,25 +242,6 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * Add a new whereIs method to let the builder check against a model
-     *
-     * @param $value
-     * @param string $boolean
-     * @param bool $not
-     * @return mixed
-     */
-    public function whereIs($value, $boolean = 'and', $not = false)
-    {
-        if (is_a($value, Collection::class)) {
-            $value = $value->modelKeys();
-        } elseif (is_a($value, Model::class)) {
-            $value = $value->getKey();
-        }
-
-        return $this->whereIn($this->getModel()->getKeyName(), (array)$value, $boolean, $not);
-    }
-
-    /**
      * Overwrite the whereBetween method to add the table name in front of the column
      *
      * @param $column
@@ -176,109 +255,9 @@ class Builder extends EloquentBuilder
         return parent::whereBetween($this->getModelTableColumn($column), $values, $boolean, $not);
     }
 
-    /**
-     * This count keeps in mind the limit applied to the query
-     *
-     * @param string $columns
-     * @return int
+    /*
+     * Private Methods
      */
-    public function countWithLimit($columns = '*')
-    {
-        $parentCount = $this->count($columns);
-
-        $limit = $this->getQuery()->limit;
-
-        return (!is_null($limit) && $limit < $parentCount) ? $limit : $parentCount;
-    }
-
-    /**
-     * @param $count
-     * @param callable $callback
-     * @param null $limit
-     * @return bool
-     */
-    public function chunkWithLimit($count, callable $callback, $limit = null)
-    {
-        $total = 0;
-
-        if (!is_null($limit) && $limit < $count) {
-            $count = $limit;
-        }
-
-        $this->chunk($count, function ($elements) use ($callback, &$total, $limit) {
-            $callback($elements);
-
-            $total += count($elements);
-
-            if (!is_null($limit) && $total >= $limit) {
-                return false;
-            }
-        });
-
-        return true;
-    }
-
-    /**
-     * Call the helper available in the package to generates the name of the column with the table name attached
-     *
-     * @param $column
-     * @return mixed
-     */
-    public function getModelTableColumn($column)
-    {
-        return table_column($this->getModel()->getTable(), $column);
-    }
-
-    /**
-     * @param $relationName
-     * @param $fields
-     * @return $this
-     */
-    public function addSelectThroughRelation($relationName, $fields)
-    {
-        $query = $this->getQueryRelation($relationName);
-
-        $this->joinOnRelation($relationName, 'left');
-
-        foreach ($fields as $key => $value) {
-
-            if (is_a($value, Expression::class)) {
-                $raw = $value;
-            } else {
-                $as = !is_int($key) ? $value : (str_replace('.', '_', $relationName) . '_' . $value);
-
-                $column = $query->from . '.' . (!is_int($key) ? $key : $value);
-
-                $raw = DB::raw($column . ' as ' . $as);
-            }
-
-            $this->addSelect($raw);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param $relationName
-     * @param string $type
-     * @return $this
-     */
-    public function joinThroughRelation($relationName, $type = 'inner')
-    {
-        $query = $this->getQueryRelation($relationName);
-
-        $constraints = $query->wheres;
-
-        $bindings = $query->bindings['where'];
-
-        return $this->join($query->from, function (JoinClause $join) use ($constraints, $bindings) {
-
-            $join->wheres = array_merge($join->wheres, $constraints);
-
-            $join->addBinding($bindings);
-
-        }, null, null, $type);
-    }
 
     /**
      * @param $relation_name

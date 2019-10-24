@@ -6,17 +6,6 @@ trait HasReference
 {
     public $referenceColumn = 'reference';
 
-    public $canBeFoundThroughReference = true;
-
-    /**
-     * @param $string
-     * @return bool
-     */
-    static function isReference($string)
-    {
-        return preg_match('/^[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}$/', $string) == 1;
-    }
-
     /**
      * Boot the trait
      */

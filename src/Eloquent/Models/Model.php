@@ -8,7 +8,13 @@ use Jchedev\Laravel\Eloquent\Collections\Collection;
 
 abstract class Model extends EloquentModel
 {
+    /*
+     * New Methods
+     */
+
     /**
+     * Allow the call of getRouteKeyName() in a static way
+     *
      * @return mixed
      */
     static function routeKeyName()
@@ -27,7 +33,7 @@ abstract class Model extends EloquentModel
     }
 
     /**
-     * Allow a static call on the getTableColumn() method
+     * Allow the call of getTableColumn() in a static way
      *
      * @param $column
      * @return mixed
@@ -38,6 +44,8 @@ abstract class Model extends EloquentModel
     }
 
     /**
+     * Allow the call of collection() in a static way
+     *
      * @param array $models
      * @return mixed
      */
@@ -56,6 +64,50 @@ abstract class Model extends EloquentModel
     {
         return table_column($this->getTable(), $column);
     }
+
+    /**
+     * Because fireModelEvent is protected and cannot be called from outside the model
+     * This is used by the JChedev\Eloquent\Builder - createMany() custom method
+     *
+     * @param $event
+     * @return $this
+     */
+    public function applyEvent($event)
+    {
+        $this->fireModelEvent($event);
+
+        return $this;
+    }
+
+    /**
+     * Because updateTimestamps is protected and cannot be called from outside the model
+     * This is used by the JChedev\Eloquent\Builder - createMany() custom method
+     *
+     * @return $this
+     */
+    public function applyTimestamps()
+    {
+        if ($this->usesTimestamps()) {
+            $this->updateTimestamps();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Check if an attribute is set (different from null/empty)
+     *
+     * @param $attribute
+     * @return bool
+     */
+    public function hasAttribute($attribute)
+    {
+        return array_key_exists($attribute, $this->attributes);
+    }
+
+    /*
+     * Modified methods
+     */
 
     /**
      * Overwrite the Eloquent\Builder by a custom one with even more features
@@ -80,48 +132,20 @@ abstract class Model extends EloquentModel
     }
 
     /**
-     * @param $event
-     * @return $this
-     */
-    public function applyEvent($event)
-    {
-        $this->fireModelEvent($event);
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function applyTimestamps()
-    {
-        if ($this->usesTimestamps()) {
-            $this->updateTimestamps();
-        }
-
-        return $this;
-    }
-
-    /**
      * @param string $key
      * @param mixed $value
      * @return mixed
      */
     public function setAttribute($key, $value)
     {
-        if ($this->hasSetMutator($key) === false && is_a($value, \Illuminate\Database\Eloquent\Model::class)) {
-            $value = $value->getKey();
+        if ($this->hasSetMutator($key) === false) {
+
+            // If the value is an Eloquent\Model we most likely want to save the key
+            if (is_a($value, EloquentModel::class)) {
+                $value = $value->getKey();
+            }
         }
 
         return parent::setAttribute($key, $value);
-    }
-
-    /**
-     * @param $attribute
-     * @return bool
-     */
-    public function hasAttribute($attribute)
-    {
-        return array_key_exists($attribute, $this->attributes);
     }
 }

@@ -4,6 +4,10 @@ namespace Jchedev\Laravel\Eloquent\Collections;
 
 class Collection extends \Illuminate\Database\Eloquent\Collection
 {
+    /*
+     * New Methods
+     */
+
     /**
      * Generate a builder with all the ID of the collections
      *
@@ -21,6 +25,8 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
     }
 
     /**
+     * Run an update on multiple elements at once through the builder
+     *
      * @param array $attributes
      * @param array $options
      */
@@ -40,7 +46,7 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
     }
 
     /**
-     *
+     * Run a delete on multiple elements at once through the builder
      */
     public function delete()
     {
@@ -56,4 +62,10 @@ class Collection extends \Illuminate\Database\Eloquent\Collection
             }
         }
     }
+
+    /*
+     * Modified methods
+     */
+
+    // ...
 }

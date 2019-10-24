@@ -4,7 +4,7 @@ namespace Jchedev\Laravel\Traits;
 
 trait HasReference
 {
-    public $referenceColumn = 'reference';
+    protected $referenceColumn = 'reference';
 
     /**
      * Boot the trait
@@ -13,7 +13,7 @@ trait HasReference
     {
         static::creating(function ($model) {
 
-            $referenceColumn = $model->referenceColumn;
+            $referenceColumn = $model->getReferenceColumn();
 
             if (is_null($model->$referenceColumn)) {
                 $model->$referenceColumn = $model->generateReference();
@@ -37,6 +37,14 @@ trait HasReference
      * @return string
      */
     public function getRouteKeyName()
+    {
+        return $this->getReferenceColumn();
+    }
+
+    /**
+     * @return string
+     */
+    public function getReferenceColumn()
     {
         return $this->referenceColumn;
     }

@@ -3,6 +3,8 @@
 namespace Jchedev\Laravel\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Model as EloquentModel;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Jchedev\Laravel\Eloquent\Builders\Builder;
 use Jchedev\Laravel\Eloquent\Collections\Collection;
 
@@ -115,6 +117,39 @@ abstract class Model extends EloquentModel
         return array_key_exists($attribute, $this->attributes);
     }
 
+    /**
+     * @param $key
+     * @param \Illuminate\Database\Eloquent\Model $model
+     */
+    public function setModelAsAttribute($key, \Illuminate\Database\Eloquent\Model $model)
+    {
+        $methodName = camel_case($key);
+
+        if (method_exists($this, $methodName)) {
+            $methodResponse = $this->$methodName();
+
+            // Handle MorphTo relations
+            if (is_a($methodResponse, MorphTo::class)) {
+                $this->setRelation($methodName, $model);
+
+                parent::setAttribute($methodResponse->getMorphType(), get_class($model));
+
+                parent::setAttribute($methodResponse->getForeignKeyName(), $model->getKey());
+
+                return $this;
+            }
+
+            // Handle BelongsTo relations
+            if (is_a($methodResponse, BelongsTo::class)) {
+                $this->setRelation($methodName, $model);
+
+                return parent::setAttribute($methodResponse->getForeignKeyName(), $model->getKey());
+            }
+        }
+
+        return parent::setAttribute($key, $model->getKey());
+    }
+
     /*
      * Modified methods
      */
@@ -148,12 +183,8 @@ abstract class Model extends EloquentModel
      */
     public function setAttribute($key, $value)
     {
-        if ($this->hasSetMutator($key) === false) {
-
-            // If the value is an Eloquent\Model we most likely want to save the key
-            if (is_a($value, EloquentModel::class)) {
-                $value = $value->getKey();
-            }
+        if ($this->hasSetMutator($key) === false && is_a($value, EloquentModel::class)) {
+            return $this->setModelAsAttribute($key, $value);
         }
 
         return parent::setAttribute($key, $value);

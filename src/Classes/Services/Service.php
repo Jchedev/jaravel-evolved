@@ -587,24 +587,14 @@ abstract class Service
         }
 
         if (count($errors) != 0) {
-            $this->throwValidationException($errors);
+            $exception = ValidationException::withMessages([]);
+
+            $exception->validator->errors()->merge($errors);
+
+            throw $exception;
         }
 
         return $validatedAttributes;
-    }
-
-    /**
-     * Generate and throw a validation exception based on multiple messages
-     *
-     * @param array $messages
-     */
-    protected function throwValidationException(array $messages)
-    {
-        $exception = ValidationException::withMessages([]);
-
-        $exception->validator->errors()->merge([$messages]);
-
-        throw $exception;
     }
 
     /*

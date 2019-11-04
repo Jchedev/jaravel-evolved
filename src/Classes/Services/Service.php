@@ -600,7 +600,7 @@ abstract class Service
      */
     protected function throwValidationException(array $messages)
     {
-        $exception = \Illuminate\Validation\ValidationException::withMessages([]);
+        $exception = ValidationException::withMessages([]);
 
         $exception->validator->errors()->merge([$messages]);
 

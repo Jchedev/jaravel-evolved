@@ -7,8 +7,6 @@ use Illuminate\Validation\Validator;
 
 class TransformRule
 {
-    protected $errorMessage;
-
     /**
      * @param $attribute
      * @param $value
@@ -49,14 +47,9 @@ class TransformRule
      */
     protected function validateThroughClosure(callable $closure, $attribute, $value, Validator $validator)
     {
-        try {
-            return $closure($attribute, $value, function ($message) {
-                throw new \Exception($message);
-            }, $validator);
-        }
-        catch (\Exception $e) {
-            $this->errorMessage = $e->getMessage();
-        }
+        return $closure($attribute, $value, function ($message) {
+            throw new \Exception($message);
+        }, $validator);
     }
 
     /**

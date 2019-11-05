@@ -461,7 +461,7 @@ abstract class Service
      * @param array $data
      * @return \Illuminate\Validation\Validator
      */
-    protected function validatorForCreate(array $data = []): Validator
+    public function validatorForCreate(array $data = []): Validator
     {
         $rules = $this->validationRulesForCreate();
 
@@ -474,7 +474,7 @@ abstract class Service
      *
      * @return array
      */
-    protected function validationRulesForCreate(): array
+    public function validationRulesForCreate(): array
     {
         $validationRules = [];
 
@@ -492,7 +492,7 @@ abstract class Service
      * @param array $data
      * @return \Illuminate\Validation\Validator
      */
-    protected function validatorForUpdate(Model $model, array $data = []): Validator
+    public function validatorForUpdate(Model $model, array $data = []): Validator
     {
         $rules = array_only($this->validationRulesForUpdate($model), array_keys($data));
 
@@ -506,7 +506,7 @@ abstract class Service
      * @param \Illuminate\Database\Eloquent\Model $model
      * @return array
      */
-    protected function validationRulesForUpdate(Model $model): array
+    public function validationRulesForUpdate(Model $model): array
     {
         $validationRules = [];
 
@@ -593,7 +593,7 @@ abstract class Service
                 $field = Field::make($key, (array)$field);
             }
 
-            $fields[] = $field;
+            $fields[$field->getKey()] = $field;
         }
 
         return $fields;

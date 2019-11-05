@@ -49,11 +49,9 @@ abstract class Service
 
             $model = $this->performCreate($finalAttributes);
 
-            $model->wasRecentlyCreated = true;
-
-            $this->setRelations($model, array_merge($validatedData, $finalAttributes));
-
             $model = $this->afterCreating($model);
+
+            $model->wasRecentlyCreated = true;
 
             return $model;
         });
@@ -107,13 +105,11 @@ abstract class Service
 
             $collection = $this->performCreateMany($finalAttributes);
 
+            $collection = $this->afterCreatingMany($collection);
+
             foreach ($collection as $key => $model) {
                 $model->wasRecentlyCreated = true;
-
-                $this->setRelations($model, array_merge($validatedData[$key], $finalAttributes[$key]));
             }
-
-            $collection = $this->afterCreatingMany($collection);
 
             return $collection;
         });
@@ -171,8 +167,6 @@ abstract class Service
 
             $model = $this->performUpdate($model, $finalAttributes);
 
-            $this->setRelations($model, array_merge($validatedData, $finalAttributes));
-
             $model = $this->afterUpdating($model);
 
             return $model;
@@ -229,10 +223,6 @@ abstract class Service
             $finalAttributes = $this->beforeUpdatingMany($collection, $validatedData);
 
             $collection = $this->performUpdateMany($collection, $finalAttributes);
-
-            foreach ($collection as $key => $model) {
-                $this->setRelations($model, array_merge($validatedData[$key], $finalAttributes[$key]));
-            }
 
             $collection = $this->afterUpdatingMany($collection);
 
@@ -382,9 +372,9 @@ abstract class Service
 
         if (!is_null($model)) {
             return $this->update($model, $attributes);
+        } else {
+            return $this->create($attributes);
         }
-
-        return $this->create($attributes);
     }
 
     /**
@@ -471,7 +461,7 @@ abstract class Service
      * @param array $data
      * @return \Illuminate\Validation\Validator
      */
-    public function validatorForCreate(array $data = []): Validator
+    protected function validatorForCreate(array $data = []): Validator
     {
         $rules = $this->validationRulesForCreate();
 
@@ -484,18 +474,12 @@ abstract class Service
      *
      * @return array
      */
-    public function validationRulesForCreate(): array
+    protected function validationRulesForCreate(): array
     {
         $validationRules = [];
 
-        foreach ($this->fields() as $key => $field) {
-            if (is_array($field) || is_string($field)) {
-                // $field can be an "regular" validation rule (array or string)
-                $validationRules[$key] = (array)$field;
-            } elseif (is_a($field, Field::class)) {
-                // $field can be a Field object
-                $validationRules[$key] = $field->getValidationRules();
-            }
+        foreach ($this->getFields() as $field) {
+            $validationRules[$field->getKey()] = $field->getValidationRules();
         }
 
         return $validationRules;
@@ -508,7 +492,7 @@ abstract class Service
      * @param array $data
      * @return \Illuminate\Validation\Validator
      */
-    public function validatorForUpdate(Model $model, array $data = []): Validator
+    protected function validatorForUpdate(Model $model, array $data = []): Validator
     {
         $rules = array_only($this->validationRulesForUpdate($model), array_keys($data));
 
@@ -522,17 +506,13 @@ abstract class Service
      * @param \Illuminate\Database\Eloquent\Model $model
      * @return array
      */
-    public function validationRulesForUpdate(Model $model): array
+    protected function validationRulesForUpdate(Model $model): array
     {
         $validationRules = [];
 
-        foreach ($this->fields() as $key => $field) {
-            if (is_array($field) || is_string($field)) {
-                // $field can be an "regular" validation rule (array or string)
-                $validationRules[$key] = (array)$field;
-            } elseif (is_a($field, Field::class) && $field->isEditable()) {
-                // $field can be a Field object but would need to be Editable
-                $validationRules[$key] = $field->getValidationRules();
+        foreach ($this->getFields() as $field) {
+            if ($field->isEditable()) {
+                $validationRules[$field->getKey()] = $field->getValidationRules();
             }
         }
 
@@ -598,25 +578,24 @@ abstract class Service
     }
 
     /*
-     * Other helpers & small methods
+     * Other methods
      */
 
     /**
-     * @param \Illuminate\Database\Eloquent\Model $model
-     * @param array $attributes
+     * @return array
      */
-    protected function setRelations(Model $model, array $attributes)
+    public function getFields()
     {
+        $fields = [];
+
         foreach ($this->fields() as $key => $field) {
-            if (!is_a($field, Field::class) || empty($attributes[$key])) {
-                continue;
+            if (!is_a($field, Field::class)) {
+                $field = Field::make($key, (array)$field);
             }
 
-            foreach ($field->getRelations() as $relationMethodName) {
-                if (method_exists($model, $relationMethodName)) {
-                    $model->setRelation($relationMethodName, $attributes[$key]);
-                }
-            }
+            $fields[] = $field;
         }
+
+        return $fields;
     }
 }

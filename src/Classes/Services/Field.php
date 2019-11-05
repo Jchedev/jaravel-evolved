@@ -5,6 +5,11 @@ namespace Jchedev\Laravel\Classes\Services;
 class Field
 {
     /**
+     * @var
+     */
+    protected $key;
+
+    /**
      * @var bool
      */
     protected $editable = true;
@@ -15,23 +20,24 @@ class Field
     protected $validationRules = [];
 
     /**
-     * @var array
-     */
-    protected $relations = [];
-
-    /**
      * Field constructor.
      *
+     * @param string $key
      * @param array $validationRules
-     * @param null $relations
      */
-    public function __construct(array $validationRules = [], $relations = null)
+    public function __construct(string $key, array $validationRules = [])
     {
-        $this->validationRules($validationRules);
+        $this->key = $key;
 
-        if (!is_null($relations)) {
-            $this->relations($relations);
-        }
+        $this->validationRules($validationRules);
+    }
+
+    /**
+     * @return string
+     */
+    public function getKey()
+    {
+        return $this->key;
     }
 
     /**
@@ -40,7 +46,11 @@ class Field
      */
     public function validationRules(array $validationRules)
     {
-        $this->validationRules = $validationRules;
+        $this->validationRules = [];
+
+        foreach ($validationRules as $key => $value) {
+            $this->validationRule($key, $value);
+        }
 
         return $this;
     }
@@ -51,25 +61,6 @@ class Field
     public function getValidationRules()
     {
         return $this->validationRules;
-    }
-
-    /**
-     * @param $relations
-     * @return $this
-     */
-    public function relations($relations)
-    {
-        $this->relations += (array)$relations;
-
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getRelations()
-    {
-        return $this->relations;
     }
 
     /**
@@ -92,12 +83,36 @@ class Field
     }
 
     /**
+     * @param string $key
      * @param array $validationRules
-     * @param null $relations
-     * @return \App\Classes\Field
+     * @return \Jchedev\Laravel\Classes\Services\Field
      */
-    static function make(array $validationRules = [], $relations = null)
+    static function make(string $key, array $validationRules = [])
     {
-        return new self($validationRules, $relations);
+        return new self($key, $validationRules);
+    }
+
+    /**
+     * @param $key
+     * @param $value
+     */
+    protected function validationRule($key, $value)
+    {
+        if (is_string($key)) {
+            if (is_string($value)) {
+                $value = $key . ':' . $value;
+            } elseif (is_array($value)) {
+                array_unshift($value, $key);
+            }
+
+        } else {
+            if (is_string($value)) {
+                $key = array_first(explode(':', $value));
+            } elseif (is_array($value)) {
+                $key = array_first($value);
+            }
+        }
+
+        $this->validationRules[$key] = $value;
     }
 }

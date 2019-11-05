@@ -121,7 +121,7 @@ abstract class Model extends EloquentModel
      * @param $key
      * @param \Illuminate\Database\Eloquent\Model $model
      */
-    public function setModelAsAttribute($key, \Illuminate\Database\Eloquent\Model $model)
+    public function setModelAsAttribute($key, EloquentModel $model = null)
     {
         $methodName = camel_case($key);
 
@@ -132,9 +132,9 @@ abstract class Model extends EloquentModel
             if (is_a($methodResponse, MorphTo::class)) {
                 $this->setRelation($methodName, $model);
 
-                parent::setAttribute($methodResponse->getMorphType(), get_class($model));
+                parent::setAttribute($methodResponse->getMorphType(), !is_null($model) ? get_class($model) : null);
 
-                parent::setAttribute($methodResponse->getForeignKeyName(), $model->getKey());
+                parent::setAttribute($methodResponse->getForeignKeyName(), !is_null($model) ? $model->getKey() : null);
 
                 return $this;
             }
@@ -143,11 +143,11 @@ abstract class Model extends EloquentModel
             if (is_a($methodResponse, BelongsTo::class)) {
                 $this->setRelation($methodName, $model);
 
-                return parent::setAttribute($methodResponse->getForeignKeyName(), $model->getKey());
+                return parent::setAttribute($methodResponse->getForeignKeyName(), !is_null($model) ? $model->getKey() : null);
             }
         }
 
-        return parent::setAttribute($key, $model->getKey());
+        return parent::setAttribute($key, !is_null($model) ? $model->getKey() : null);
     }
 
     /*
@@ -183,7 +183,7 @@ abstract class Model extends EloquentModel
      */
     public function setAttribute($key, $value)
     {
-        if ($this->hasSetMutator($key) === false && is_a($value, EloquentModel::class)) {
+        if ($this->hasSetMutator($key) === false && ($value instanceof EloquentModel || is_null($value))) {
             return $this->setModelAsAttribute($key, $value);
         }
 

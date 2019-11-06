@@ -46,11 +46,7 @@ class Field
      */
     public function validationRules(array $validationRules)
     {
-        $this->validationRules = [];
-
-        foreach ($validationRules as $key => $value) {
-            $this->validationRule($key, $value);
-        }
+        $this->validationRules = $validationRules;
 
         return $this;
     }
@@ -90,29 +86,5 @@ class Field
     static function make(string $key, array $validationRules = [])
     {
         return new self($key, $validationRules);
-    }
-
-    /**
-     * @param $key
-     * @param $value
-     */
-    protected function validationRule($key, $value)
-    {
-        if (is_string($key)) {
-            if (is_string($value)) {
-                $value = $key . ':' . $value;
-            } elseif (is_array($value)) {
-                array_unshift($value, $key);
-            }
-
-        } else {
-            if (is_string($value)) {
-                $key = array_first(explode(':', $value));
-            } elseif (is_array($value)) {
-                $key = array_first($value);
-            }
-        }
-
-        $this->validationRules[$key] = $value;
     }
 }

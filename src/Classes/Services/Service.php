@@ -53,6 +53,8 @@ abstract class Service
 
             $model->wasRecentlyCreated = true;
 
+            $model->exists = true;
+
             return $model;
         });
     }
@@ -109,6 +111,8 @@ abstract class Service
 
             foreach ($collection as $key => $model) {
                 $model->wasRecentlyCreated = true;
+
+                $model->exists = true;
             }
 
             return $collection;

@@ -8,7 +8,7 @@
 
 namespace Jchedev\Laravel\Traits;
 
-use Jchedev\Laravel\Classes\GPSCoordinates;
+use Jchedev\Laravel\Classes\GPS\GPSCoordinates;
 
 trait HasGPSCoordinates
 {

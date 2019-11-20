@@ -45,10 +45,12 @@ class Builder extends EloquentBuilder
                 $newInstance->applyTimestamps();
             }
 
+            $arrayOfAttributes[$key] = $newInstance->getAttributes();
+
             $collection->push($newInstance);
         }
 
-        $this->insert($collection->toArray());
+        $this->insert($arrayOfAttributes);
 
         $lastId = $this->getConnection()->getPdo()->lastInsertId();
 

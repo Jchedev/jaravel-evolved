@@ -110,22 +110,6 @@ function time_multiplier($from, $to)
 }
 
 /**
- * Merge a table name and a column name if possible
- *
- * @param $table
- * @param $column
- * @return mixed
- */
-function table_column($table, $column)
-{
-    if (is_string($column) === false || strstr($column, '.') !== false) {
-        return $column;
-    }
-
-    return \DB::raw('`' . $table . '`' . '.' . ($column != '*' ? '`' . $column . '`' : $column));
-}
-
-/**
  * Minify some HTML code by deleting comments and whitespaces
  *
  * @param $html

@@ -179,6 +179,19 @@ abstract class Model extends EloquentModel implements CollectionOrModel
     }
 
     /**
+     * @param string $column
+     * @return string
+     */
+    public function qualifyColumn($column)
+    {
+        if (!is_string($column)) {
+            return $column;
+        }
+
+        return parent::qualifyColumn($column);
+    }
+
+    /**
      * @param string $key
      * @param mixed $value
      * @return mixed

@@ -34,7 +34,7 @@ class Builder extends EloquentBuilder
     {
         $collection = $this->getModel()->newCollection([]);
 
-        foreach ($arrayOfAttributes as &$attributes) {
+        foreach ($arrayOfAttributes as $key => $attributes) {
             $newInstance = $this->newModelInstance($attributes);
 
             if (method_exists($newInstance, 'applyEvent')) {
@@ -45,21 +45,23 @@ class Builder extends EloquentBuilder
                 $newInstance->applyTimestamps();
             }
 
-            $attributes = $newInstance->getAttributes();
-
-            $collection[] = $newInstance;
+            $collection->push($newInstance);
         }
 
-        if ($this->getModel()->getIncrementing()) {
-            $this->insert($arrayOfAttributes);
+        $this->insert($collection->toArray());
 
-            $lastId = $this->getConnection()->getPdo()->lastInsertId();
+        $lastId = $this->getConnection()->getPdo()->lastInsertId();
 
-            foreach ($collection as $item) {
-                $item->setAttribute($item->getKeyName(), $lastId++);
+        foreach ($collection as $model) {
+            if ($model->getIncrementing() && !is_null($lastId)) {
+                $model->setAttribute($model->getKeyName(), $lastId++);
             }
-        } else {
-            die('Model without incrementing id is not handled');
+
+            $model->wasRecentlyCreated = true;
+
+            $model->exists = true;
+
+            $model->syncOriginal();
         }
 
         return $collection;

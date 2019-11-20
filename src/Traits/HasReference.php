@@ -30,7 +30,7 @@ trait HasReference
      */
     public function generateReference()
     {
-        return \Illuminate\Support\Str::uuid();
+        return (string)\Illuminate\Support\Str::uuid();
     }
 
     /**

@@ -51,10 +51,6 @@ abstract class Service
 
             $model = $this->afterCreating($model);
 
-            $model->wasRecentlyCreated = true;
-
-            $model->exists = true;
-
             return $model;
         });
     }
@@ -108,12 +104,6 @@ abstract class Service
             $collection = $this->performCreateMany($finalAttributes);
 
             $collection = $this->afterCreatingMany($collection);
-
-            foreach ($collection as $key => $model) {
-                $model->wasRecentlyCreated = true;
-
-                $model->exists = true;
-            }
 
             return $collection;
         });

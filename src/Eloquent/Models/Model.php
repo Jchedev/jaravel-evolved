@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Jchedev\Laravel\Eloquent\Builders\Builder;
 use Jchedev\Laravel\Eloquent\Collections\Collection;
+use Jchedev\Laravel\Interfaces\CollectionOrModel;
 
-abstract class Model extends EloquentModel
+abstract class Model extends EloquentModel implements CollectionOrModel
 {
     /*
      * New Methods

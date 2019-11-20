@@ -5,12 +5,23 @@ Laravel is a really cool framework. But there is always some improvements that c
 Note: The following examples are based on a system which has a model `User` (sql table "users") who has many `Post` (sql table "posts" with a "user_id" column), with 0-X `Comment` attached to each of them (sql table "comments" with a "post_id" column).
 
 
-
 ## Jchedev\Laravel\Classes
 
 This library comes with some useful standalone classes:
 
 - `Pagination\ByOffsetLengthAwarePaginator` 
+(todo...)
+
+- `GPS\GPSCoordinates`
+(todo...)
+
+- `Selectors\Selector`
+(todo...)
+
+- `Services\Service`
+(todo...)
+
+- `Validation\Validator`
 (todo...)
 
 
@@ -52,6 +63,8 @@ This library comes with some useful standalone classes:
 
 This class inherits directly from [Illuminate\Database\Eloquent\Model](https://laravel.com/api/5.7/Illuminate/Database/Eloquent/Model.html) but add some features, specifically about relations management.
 
+Implements the `CollectionOrModel` interface.
+
 ### New methods
 
 - #### _static_ `table()`
@@ -77,10 +90,18 @@ This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collectio
 
 This class inherits directly from [Illuminate\Database\Eloquent\Collection](https://laravel.com/api/5.7/Illuminate/Database/Eloquent/Collection.html) but add new methods.
 
+Implements the `CollectionOrModel` interface.
+
 ### New methods
 
 - #### `builder()`
 Returns a builder targeting only the items of the collection (using `whereIn(primary_key, [...])`). This method expects all the items of the collection to be from the same Model (Mixing some "Users" to some "Comments" will create unwanted behavior).  
+
+- #### `update(array $attributes = [], array $options = [])`
+(todo...)
+
+- #### `update(array $attributes = [], array $options = [])`
+(todo...)
 
 
 
@@ -169,21 +190,15 @@ This library comes with some extra middleware:
 
 
 
-## Jchedev\Laravel\Rules
-
-This library comes with some extra rules:
-
-- `isObject`
-
-- `ModelExists`
-
-
-
 ## Jchedev\Laravel\Traits
 
 This library comes with some extra rules:
 
 - `HandlesExceptions`
+
+- `HasCompositePrimaryKey`
+
+- `HasGPSCoordinates`
 
 - `HasReference`
 
@@ -193,11 +208,23 @@ This library comes with some extra rules:
 
 This library comes with some useful helpers:
 
+#### arrays.php
+
 - `array_get_any(array $array, array $keys, $default = null)`
 (todo...)
 
-- `rules_require_one_of(array $rules)`
+#### objects.php
+
+- `get_variable_type($variable)`
 (todo...)
+
+- `get_class_basename($object)`: 
+Accept a string or an object and return only the basename part of a `get_class()` return on it. (Example: `get_class_basename('Jchedev\Laravel\Console\Commands')` will return "Commands").
+
+- `get_class_namespace($object)`: 
+Accept a string or an object and return only the namespace part of a `get_class()` return on it. (Example: `get_class_basename('Jchedev\Laravel\Console\Commands')` will return "Jchedev\Laravel\Console").
+
+#### strings.php
 
 - `sanitize_string($value)`
 (todo...)
@@ -220,8 +247,3 @@ Appends a $table name to a $column. This helper is mainly used by the query buil
 - `minify_html($html)`: 
 Minify as much as possible some html content by removing unecessary tabs, comments and such and return the optimized string.
 
-- `get_class_basename($object)`: 
-Accept a string or an object and return only the basename part of a `get_class()` return on it. (Example: `get_class_basename('Jchedev\Laravel\Console\Commands')` will return "Commands").
-
-- `get_class_namespace($object)`: 
-Accept a string or an object and return only the namespace part of a `get_class()` return on it. (Example: `get_class_basename('Jchedev\Laravel\Console\Commands')` will return "Jchedev\Laravel\Console").

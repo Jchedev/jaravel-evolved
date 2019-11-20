@@ -2,7 +2,9 @@
 
 namespace Jchedev\Laravel\Eloquent\Collections;
 
-class Collection extends \Illuminate\Database\Eloquent\Collection
+use Jchedev\Laravel\Interfaces\CollectionOrModel;
+
+class Collection extends \Illuminate\Database\Eloquent\Collection implements CollectionOrModel
 {
     /*
      * New Methods

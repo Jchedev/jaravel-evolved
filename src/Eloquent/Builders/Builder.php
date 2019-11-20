@@ -16,17 +16,6 @@ class Builder extends EloquentBuilder
      */
 
     /**
-     * Call the helper available in the package to generates the name of the column with the table name attached
-     *
-     * @param $column
-     * @return mixed
-     */
-    public function getModelTableColumn($column)
-    {
-        return table_column($this->getModel()->getTable(), $column);
-    }
-
-    /**
      * @param array $arrayOfAttributes
      * @return array|\Illuminate\Database\Eloquent\Collection
      */
@@ -79,9 +68,9 @@ class Builder extends EloquentBuilder
      */
     public function whereIs($value, $boolean = 'and', $not = false)
     {
-        if (is_a($value, Collection::class)) {
+        if ($value instanceof Collection) {
             $value = $value->modelKeys();
-        } elseif (is_a($value, Model::class)) {
+        } elseif ($value instanceof Model) {
             $value = $value->getKey();
         }
 
@@ -198,7 +187,7 @@ class Builder extends EloquentBuilder
         $columns = !is_array($columns) ? [$columns] : $columns;
 
         foreach ($columns as $key => $column) {
-            $columns[$key] = $this->getModelTableColumn($column);
+            $columns[$key] = $this->qualifyColumn($column);
         }
 
         return parent::select($columns);
@@ -215,7 +204,7 @@ class Builder extends EloquentBuilder
      */
     public function where($column, $operator = null, $value = null, $boolean = 'and')
     {
-        return parent::where($this->getModelTableColumn($column), $operator, $value, $boolean);
+        return parent::where($this->qualifyColumn($column), $operator, $value, $boolean);
     }
 
     /**
@@ -228,7 +217,7 @@ class Builder extends EloquentBuilder
      */
     public function whereNull($column, $boolean = 'and', $not = false)
     {
-        return parent::whereNull($this->getModelTableColumn($column), $boolean, $not);
+        return parent::whereNull($this->qualifyColumn($column), $boolean, $not);
     }
 
     /**
@@ -242,7 +231,7 @@ class Builder extends EloquentBuilder
      */
     public function whereIn($column, $values, $boolean = 'and', $not = false)
     {
-        return parent::whereIn($this->getModelTableColumn($column), $values, $boolean, $not);
+        return parent::whereIn($this->qualifyColumn($column), $values, $boolean, $not);
     }
 
     /**
@@ -256,7 +245,7 @@ class Builder extends EloquentBuilder
      */
     public function whereBetween($column, array $values, $boolean = 'and', $not = false)
     {
-        return parent::whereBetween($this->getModelTableColumn($column), $values, $boolean, $not);
+        return parent::whereBetween($this->qualifyColumn($column), $values, $boolean, $not);
     }
 
     /*
@@ -264,6 +253,8 @@ class Builder extends EloquentBuilder
      */
 
     /**
+     * Used by addSelectThroughRelation() and joinThroughRelation to find the proper wheres to use
+     *
      * @param $relation_name
      * @return \Illuminate\Database\Query\Builder
      */

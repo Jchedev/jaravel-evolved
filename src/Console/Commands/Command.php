@@ -2,7 +2,6 @@
 
 namespace Jchedev\Laravel\Console\Commands;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 
 abstract class Command extends \Illuminate\Console\Command
@@ -269,20 +268,5 @@ abstract class Command extends \Illuminate\Console\Command
     public function hasActiveProgressBar()
     {
         return !is_null($this->activeProgressBar);
-    }
-
-    /**
-     * Check if we want to execute a job now or defer it
-     *
-     * @param \Illuminate\Contracts\Queue\ShouldQueue $job
-     * @param bool $deferred
-     */
-    protected function handleJobOrDefer(ShouldQueue $job, $deferred = false)
-    {
-        if ($deferred === true) {
-            $this->dispatch($job);
-        } else {
-            $job->handle();
-        }
     }
 }

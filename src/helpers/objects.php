@@ -35,6 +35,8 @@ function get_class_namespace($object)
 }
 
 /**
+ * The default gettype() method doesnt work if a Closure. This method does.
+ *
  * @param $variable
  * @return string
  */

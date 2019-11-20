@@ -75,7 +75,7 @@ abstract class Model extends EloquentModel implements CollectionOrModel
      */
     public function getTableColumn($column)
     {
-        return table_column($this->getTable(), $column);
+        return $this->qualifyColumn($column);
     }
 
     /**
@@ -120,7 +120,8 @@ abstract class Model extends EloquentModel implements CollectionOrModel
 
     /**
      * @param $key
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param \Illuminate\Database\Eloquent\Model|null $model
+     * @return $this|mixed
      */
     public function setModelAsAttribute($key, EloquentModel $model = null)
     {
@@ -130,7 +131,7 @@ abstract class Model extends EloquentModel implements CollectionOrModel
             $methodResponse = $this->$methodName();
 
             // Handle MorphTo relations
-            if (is_a($methodResponse, MorphTo::class)) {
+            if ($methodResponse instanceof MorphTo) {
                 $this->setRelation($methodName, $model);
 
                 parent::setAttribute($methodResponse->getMorphType(), !is_null($model) ? get_class($model) : null);
@@ -141,7 +142,7 @@ abstract class Model extends EloquentModel implements CollectionOrModel
             }
 
             // Handle BelongsTo relations
-            if (is_a($methodResponse, BelongsTo::class)) {
+            if ($methodResponse instanceof BelongsTo) {
                 $this->setRelation($methodName, $model);
 
                 return parent::setAttribute($methodResponse->getForeignKeyName(), !is_null($model) ? $model->getKey() : null);

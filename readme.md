@@ -2,9 +2,6 @@
 
 Laravel is a really cool framework. But there is always some improvements that can be made. This repository is like beta sandbox for it, before a potential pull requests on the official laravel git.
 
-Note: The following examples are based on a system which has a model `User` (sql table "users") who has many `Post` (sql table "posts" with a "user_id" column), with 0-X `Comment` attached to each of them (sql table "comments" with a "post_id" column).
-
-
 ## Jchedev\Laravel\Classes
 
 This library comes with some useful standalone classes:
@@ -43,9 +40,6 @@ This library comes with some useful standalone classes:
 - #### `finishProgressBar()`
 (todo...)
 
-- #### `handleJobOrDefer(ShouldQueue $job, $deferred = false)`
-(todo...)
-
 ### Modified methods
 
 - #### `info($message, $verbosity = null, $tab = 0)`
@@ -61,34 +55,36 @@ This library comes with some useful standalone classes:
 
 ## Jchedev\Laravel\Eloquent\Models\Model
 
-This class inherits directly from [Illuminate\Database\Eloquent\Model](https://laravel.com/api/5.7/Illuminate/Database/Eloquent/Model.html) but add some features, specifically about relations management.
+This class inherits directly from `Illuminate\Database\Eloquent\Model` but add some features, specifically about relations management.
 
 Implements the `CollectionOrModel` interface.
 
 ### New methods
 
 - #### _static_ `table()`
-(todo...)
+Allows the usage of `getTable()` statically.
 
 - #### _static_ `tableColumn($column)`
-(todo...)
+Allows the usage of `getTableColumn()` statically.
 
 - #### `getTableColumn($column)`
-(todo...)
+Alias for `qualifyColumn($column)` which has been added since.
 
 ### Modified methods
 
 - #### `newEloquentBuilder($query)`
-This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Builders\Builder` instead. If you decide to return your own builder model, you should make it inherits from `Jchedev\Laravel\Eloquent\Builders\Builder` first. 
+This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Builders\Builder` instead. 
+If you decide to use your own Builder class, you should make it inherits from `Jchedev\Laravel\Eloquent\Builders\Builder` first. 
 
 - #### `newCollection(array $models = [])`
-This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collections\Collection` instead. If you decide to return your own collection model, you should make it inherits from `Jchedev\Laravel\Eloquent\Collections\Collection` first. 
+This method has been overwritten to return a `Jchedev\Laravel\Eloquent\Collections\Collection` instead. 
+If you decide to return your own Collection class, you should make it inherits from `Jchedev\Laravel\Eloquent\Collections\Collection` first. 
 
 
 
 ## Jchedev\Laravel\Eloquent\Collections\Collection
 
-This class inherits directly from [Illuminate\Database\Eloquent\Collection](https://laravel.com/api/5.7/Illuminate/Database/Eloquent/Collection.html) but add new methods.
+This class inherits directly from `Illuminate\Database\Eloquent\Collection` but add new methods.
 
 Implements the `CollectionOrModel` interface.
 
@@ -98,21 +94,18 @@ Implements the `CollectionOrModel` interface.
 Returns a builder targeting only the items of the collection (using `whereIn(primary_key, [...])`). This method expects all the items of the collection to be from the same Model (Mixing some "Users" to some "Comments" will create unwanted behavior).  
 
 - #### `update(array $attributes = [], array $options = [])`
-(todo...)
+Run an update query on the builder returned by `builder()`.
 
-- #### `update(array $attributes = [], array $options = [])`
-(todo...)
+- #### `delete(array $options = [])`
+Run an delete query on the builder returned by `builder()`.
 
 
 
 ## Jchedev\Laravel\Eloquent\Builders\Builder
 
-This class inherits directly from [Illuminate\Database\Eloquent\Builder](https://laravel.com/api/5.7/Illuminate/Database/Eloquent/Builder.html) but add new methods.
+This class inherits directly from `Illuminate\Database\Eloquent\Builder` but add new methods.
 
 ### New methods
-
-- #### `getModelTableColumn($column)`
-(todo...)
 
 - #### `addSelectThroughRelation($relationName, $fields)`
 (todo...)
@@ -134,25 +127,22 @@ User::take(10)->countWithLimit() = 10
 ### Modified methods
 
 - #### `select($columns = ['*'])`
-(todo...)
-
-- #### `addSelect($column, $addSelectAll = true)`
-(todo...)
+The default `select()` method is not qualifying the column name. This one is.
 
 - #### `where($column, $operator = null, $value = null, $boolean = 'and')`
-(todo...)
+The default `where()` method is not qualifying the column name. This one is.
 
 - #### `whereNull($column, $boolean = 'and', $not = false)`
-(todo...)
+The default `whereNull()` method is not qualifying the column name. This one is.
 
 - #### `whereIn($column, $values, $boolean = 'and', $not = false)`
-(todo...)
+The default `whereIn()` method is not qualifying the column name. This one is.
 
 - #### `whereIs($value, $boolean = 'and', $not = false)`
 (todo...)
 
 - #### `whereBetween($column, array $values, $boolean = 'and', $not = false)`
-(todo...)
+The default `whereBetween()` method is not qualifying the column name. This one is.
 
 
 
@@ -181,12 +171,14 @@ This library comes with some extra middleware:
 
 
 ## Jchedev\Laravel\Http\Resources\Collection
-(todo...)
+
+Calling a method that doesnt exist on the object will automatically forward the call to each Resource element.
 
 
 
 ## Jchedev\Laravel\Http\Resources\Resource
-(todo...)
+
+Calling `::collection()` will return a `Jchedev\Laravel\Http\Resources\Collection` object.
 
 
 
@@ -216,7 +208,7 @@ This library comes with some useful helpers:
 #### objects.php
 
 - `get_variable_type($variable)`
-(todo...)
+The default gettype() method doesnt work if a Closure. This method does.
 
 - `get_class_basename($object)`: 
 Accept a string or an object and return only the basename part of a `get_class()` return on it. (Example: `get_class_basename('Jchedev\Laravel\Console\Commands')` will return "Commands").
@@ -227,7 +219,7 @@ Accept a string or an object and return only the namespace part of a `get_class(
 #### strings.php
 
 - `sanitize_string($value)`
-(todo...)
+Trim the string, except if value is NULL.
 
 - `boolean_to_string($value, $true = 'true', $false = 'false')`: 
 Converts a boolean true/false into a string (Default values: "true" or "false").

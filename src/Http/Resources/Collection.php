@@ -2,44 +2,25 @@
 
 namespace Jchedev\Laravel\Http\Resources;
 
-use \Illuminate\Http\Resources\Json\ResourceCollection;
-use Illuminate\Pagination\AbstractPaginator;
-use Jchedev\Laravel\Classes\Pagination\ByOffsetLengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-class Collection extends ResourceCollection
+class Collection extends AnonymousResourceCollection
 {
     /**
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param string $method
+     * @param array $parameters
+     * @return mixed
      */
-    public function toResponse($request)
+    public function __call($method, $parameters)
     {
-        if ($this->resource instanceof ByOffsetLengthAwarePaginator) {
-            return $this->toResponseForByOffsetPaginator($request);
+        if (method_exists($this->collects, $method)) {
+            foreach ($this->collection as $object) {
+                call_user_func_array([$object, $method], $parameters);
+            }
+
+            return $this;
         }
 
-        if ($this->resource instanceof AbstractPaginator) {
-            return $this->toResponseForAbstractPaginator($request);
-        }
-
-        return parent::toResponse($request);
-    }
-
-    /**
-     * @param $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function toResponseForByOffsetPaginator($request)
-    {
-        return parent::toResponse($request);
-    }
-
-    /**
-     * @param $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function toResponseForAbstractPaginator($request)
-    {
-        return parent::toResponse($request);
+        return parent::__call($method, $parameters);
     }
 }

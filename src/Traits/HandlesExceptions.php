@@ -66,6 +66,7 @@ trait HandlesExceptions
     {
         $message = $exception->getMessage();
 
+        // If the error is 500 and there is no debug, then we hide the specific error message
         if ($statusCode == HttpResponse::HTTP_INTERNAL_SERVER_ERROR && config('app.debug') === false) {
             $message = null;
         }
@@ -79,6 +80,13 @@ trait HandlesExceptions
 
         if ($exception instanceof ValidationException) {
             $response['error']['errors'] = $exception->errors();
+        }
+
+        if (config('app.debug')) {
+            $response['debug'] = [
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine()
+            ];
         }
 
         return $response;

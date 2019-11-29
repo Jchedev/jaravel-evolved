@@ -12,6 +12,24 @@ class Validator extends \Illuminate\Validation\Validator
     protected $variablesToReturn = [];
 
     /**
+     * Validator constructor.
+     *
+     * @param \Illuminate\Contracts\Translation\Translator $translator
+     * @param array $data
+     * @param array $rules
+     * @param array $messages
+     * @param array $customAttributes
+     */
+    public function __construct(\Illuminate\Contracts\Translation\Translator $translator, array $data, array $rules, array $messages = [], array $customAttributes = [])
+    {
+        parent::__construct($translator, $data, $rules, $messages, $customAttributes);
+
+        $this->customMessages['array_or_json'] = ':attribute is not an array';
+
+        $this->customMessages['is'] = ':attribute is not the right type of object';
+    }
+
+    /**
      * @param $key
      * @param $value
      * @return $this
@@ -19,12 +37,12 @@ class Validator extends \Illuminate\Validation\Validator
     public function updateData($key, $value)
     {
         // This is the only way to return the new value through ->validated()
-        if (!isset($this->data[$key])) {
+        if (array_has($this->data, $key) === false) {
             $this->variablesToReturn[] = $key;
         }
 
-        // Update the value. Should we use $this->setData() + $this->getData() instead ?
-        $this->data[$key] = $value;
+        // Add/Replace the value from the validator's data object
+        array_set($this->data, $key, $value);
 
         return $this;
     }
@@ -42,8 +60,8 @@ class Validator extends \Illuminate\Validation\Validator
         $validatedData = parent::validated();
 
         foreach ($this->variablesToReturn as $variable) {
-            if (!isset($validatedData[$variable])) {
-                $validatedData[$variable] = data_get($this->getData(), $variable);
+            if (!array_has($validatedData, $variable)) {
+                array_set($validatedData, $variable, data_get($this->getData(), $variable));
             }
         }
 
@@ -108,11 +126,30 @@ class Validator extends \Illuminate\Validation\Validator
     {
         $class = array_shift($parameters);
 
-        if (!$value instanceof $class) {
-            $this->setCustomMessages([$attribute . '.is' => $attribute . ' is not the right type of object']);
-
+        if (!is_null($value) && !$value instanceof $class) {
             return false;
         }
+
+        return true;
+    }
+
+    /**
+     * @param $attribute
+     * @param $value
+     * @param $parameters
+     * @return bool
+     */
+    public function validateArrayOrJson($attribute, $value, $parameters)
+    {
+        if (is_string($value)) {
+            $value = json_decode($value, true);
+        }
+
+        if (!is_array($value)) {
+            return false;
+        }
+
+        $this->updateData($attribute, $value);
 
         return true;
     }
@@ -186,7 +223,7 @@ class Validator extends \Illuminate\Validation\Validator
                 if (is_array($value)) {
                     // When the $value is an array, the rule should be the first parameter
                     $ruleName = array_shift($value);
-                } else {
+                } elseif (is_string($value)) {
                     // When the $value is the concatenated rule + params : "required", "min:5", "between:5,10"
                     $exploded = explode(':', $value);
 

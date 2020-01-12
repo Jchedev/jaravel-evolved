@@ -17,6 +17,11 @@ abstract class Service
     protected $withValidation = true;
 
     /**
+     * @var bool
+     */
+    protected $smartCreateMany = true;
+
+    /**
      * @return mixed
      */
     abstract protected function model(): Model;
@@ -128,7 +133,19 @@ abstract class Service
      */
     protected function performCreateMany(array $arrayOfAttributes): Collection
     {
-        return $this->model()->createMany($arrayOfAttributes);
+        if ($this->smartCreateMany === true) {
+            return $this->model()->createMany($arrayOfAttributes);
+        } else {
+            $collection = new Collection();
+
+            foreach ($arrayOfAttributes as $attributes) {
+                $collection->push(
+                    $this->performCreate($attributes)
+                );
+            }
+
+            return $collection;
+        }
     }
 
     /**

@@ -14,6 +14,11 @@ abstract class Command extends \Illuminate\Console\Command
     protected $return = [];
 
     /**
+     * @var int
+     */
+    protected $activeTab = 0;
+
+    /**
      * Should we also count the number of queries? Resource heavy
      */
     protected $countQueries = false;
@@ -160,60 +165,64 @@ abstract class Command extends \Illuminate\Console\Command
      *
      * @param $message
      * @param null $verbosity
-     * @param int $tab
      */
-    public function step($message, $verbosity = null, $tab = 0)
+    public function step($message, $verbosity = null)
     {
         static $pos = 1;
 
-        $this->info($pos++ . '. ' . $message, $verbosity, $tab);
+        $this->line($pos++ . '. ' . $message, null, $verbosity);
     }
 
     /**
-     * Allow the management of tabulation at the beginning of a message
-     *
+     * @param $integer
+     */
+    public function tab($integer)
+    {
+        $this->activeTab = $integer;
+    }
+
+    /**
+     * @return string
+     */
+    protected function tabString()
+    {
+        return str_repeat('  ', $this->activeTab);
+    }
+
+    /**
+     * @param string $string
+     * @param null $style
+     * @param null $verbosity
+     */
+    public function line($string, $style = null, $verbosity = null)
+    {
+        parent::line($this->tabString() . $string, $style, $verbosity);
+    }
+
+    /**
      * @param string $message
      * @param null $verbosity
-     * @param int $tab
      */
-    public function info($message, $verbosity = null, $tab = 0)
+    public function info($message, $verbosity = null)
     {
-        for ($i = 0; $i < $tab; $i++) {
-            $message = '  ' . $message;
-        }
-
         parent::info($message, $verbosity);
     }
 
     /**
-     * Allow the management of tabulation at the beginning of a message
-     *
      * @param string $message
      * @param null $verbosity
-     * @param int $tab
      */
-    public function comment($message, $verbosity = null, $tab = 0)
+    public function comment($message, $verbosity = null)
     {
-        for ($i = 0; $i < $tab; $i++) {
-            $message = '  ' . $message;
-        }
-
         parent::comment($message, $verbosity);
     }
 
     /**
-     * Allow the management of tabulation at the beginning of a message
-     *
      * @param string $message
      * @param null $verbosity
-     * @param int $tab
      */
-    public function error($message, $verbosity = null, $tab = 0)
+    public function error($message, $verbosity = null)
     {
-        for ($i = 0; $i < $tab; $i++) {
-            $message = '  ' . $message;
-        }
-
         parent::error($message, $verbosity);
     }
 
@@ -256,8 +265,6 @@ abstract class Command extends \Illuminate\Console\Command
         $this->activeProgressBar->finish();
 
         $this->activeProgressBar = null;
-
-        $this->info("");
     }
 
     /**

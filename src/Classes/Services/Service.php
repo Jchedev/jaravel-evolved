@@ -31,6 +31,14 @@ abstract class Service
      */
 
     /**
+     * @return \Illuminate\Database\Eloquent\Model|mixed
+     */
+    public function getModel()
+    {
+        return $this->model();
+    }
+
+    /**
      * Create one model
      *
      * @param array $attributes

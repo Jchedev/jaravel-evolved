@@ -79,6 +79,8 @@ abstract class Command extends \Illuminate\Console\Command
 
         $endTime = microtime(true);
 
+        $this->tab(0);
+
         $this->info('[*] End of the command', $this->parseVerbosity('v'));
 
         $this->return['execution_time'] = ($executionTime = round($endTime - $startTime, 2));

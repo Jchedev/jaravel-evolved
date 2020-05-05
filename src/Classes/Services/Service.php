@@ -145,6 +145,10 @@ abstract class Service
      */
     protected function afterCreatingMany(Collection $collection): Collection
     {
+        foreach ($collection as $item) {
+            $this->afterCreating($item);
+        }
+
         return $collection;
     }
 
@@ -266,6 +270,10 @@ abstract class Service
      */
     protected function afterUpdatingMany(Collection $collection): Collection
     {
+        foreach ($collection as $item) {
+            $this->afterUpdating($item);
+        }
+
         return $collection;
     }
 

@@ -240,7 +240,7 @@ class Validator extends \Illuminate\Validation\Validator
                 // We want to re-create an array rule => [rule, param1, param2, ...]
                 if (is_array($value)) {
                     $newRules[$ruleName] = array_merge([$ruleName], $value);
-                } elseif ($value !== $ruleName) {
+                } elseif (is_string($value) && $value !== $ruleName) {
                     $newRules[$ruleName] = array_merge([$ruleName], !is_null($value) ? [$value] : []);
                 } else {
                     $newRules[$ruleName] = $value;

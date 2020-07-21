@@ -66,8 +66,7 @@ trait HandlesExceptions
     {
         $message = $exception->getMessage();
 
-        // If the error is 500 and there is no debug, then we hide the specific error message
-        if ($statusCode == HttpResponse::HTTP_INTERNAL_SERVER_ERROR && config('app.debug') === false) {
+        if (get_class($exception) === \Exception::class && config('app.debug') === false) {
             $message = null;
         }
 

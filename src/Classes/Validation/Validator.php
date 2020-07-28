@@ -3,6 +3,7 @@
 namespace Jchedev\Laravel\Classes\Validation;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 
 class Validator extends \Illuminate\Validation\Validator
 {
@@ -191,6 +192,19 @@ class Validator extends \Illuminate\Validation\Validator
         }
 
         return $value;
+    }
+
+    /**
+     * @param array $errors
+     * @return \Illuminate\Validation\ValidationException
+     */
+    static function exception(array $errors)
+    {
+        $exception = ValidationException::withMessages([]);
+
+        $exception->validator->errors()->merge($errors);
+
+        return $exception;
     }
 
     /**

@@ -174,13 +174,33 @@ abstract class Command extends \Illuminate\Console\Command
 
         $this->line($pos++ . '. ' . $message, null, $verbosity);
     }
-
+    
     /**
      * @param $integer
+     * @throws \Exception
      */
     public function tab($integer)
     {
-        $this->activeTab = $integer;
+        if (is_int($integer)) {
+            $this->activeTab = $integer;
+        } elseif (is_callable($integer)) {
+            $currentTab = $this->activeTab;
+
+            $this->activeTab = $currentTab + 1;
+
+            try {
+                $integer();
+            }
+            catch (\Exception $exception) {
+                // Do nothing for now
+            }
+
+            $this->activeTab = $currentTab;
+
+            if (isset($exception)) {
+                throw $exception;
+            }
+        }
     }
 
     /**

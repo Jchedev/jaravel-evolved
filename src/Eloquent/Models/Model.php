@@ -5,6 +5,7 @@ namespace Jchedev\Laravel\Eloquent\Models;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Str;
 use Jchedev\Laravel\Eloquent\Builders\Builder;
 use Jchedev\Laravel\Eloquent\Collections\Collection;
 use Jchedev\Laravel\Interfaces\CollectionOrModel;
@@ -125,7 +126,7 @@ abstract class Model extends EloquentModel implements CollectionOrModel
      */
     public function setModelAsAttribute($key, EloquentModel $model = null)
     {
-        $methodName = camel_case($key);
+        $methodName = Str::camel($key);
 
         if (method_exists($this, $methodName)) {
             $methodResponse = $this->$methodName();

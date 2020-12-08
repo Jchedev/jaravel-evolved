@@ -4,6 +4,7 @@ namespace Jchedev\Laravel\Classes\Services;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
@@ -450,7 +451,7 @@ abstract class Service
 
         // Handler can be a string like "id" which will look at the attribute
         if (is_string($handler)) {
-            if (is_null($attributeValue = array_get($attributes, $handler))) {
+            if (is_null($attributeValue = Arr::get($attributes, $handler))) {
                 return null;
             }
 
@@ -504,7 +505,7 @@ abstract class Service
      */
     public function validatorForUpdate(Model $model, array $data = []): Validator
     {
-        $rules = array_only($this->validationRulesForUpdate($model), array_keys($data));
+        $rules = Arr::only($this->validationRulesForUpdate($model), array_keys($data));
 
         return $this->validator($data, $rules);
     }
@@ -554,7 +555,7 @@ abstract class Service
             $validator->validate();
         }
 
-        return array_only($validator->getData(), array_keys($validator->getRules()));
+        return Arr::only($validator->getData(), array_keys($validator->getRules()));
     }
 
     /**

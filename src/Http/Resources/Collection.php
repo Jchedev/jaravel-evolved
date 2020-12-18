@@ -3,6 +3,7 @@
 namespace Jchedev\Laravel\Http\Resources;
 
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 
 class Collection extends AnonymousResourceCollection
 {
@@ -22,5 +23,17 @@ class Collection extends AnonymousResourceCollection
         }
 
         return parent::__call($method, $parameters);
+    }
+
+    /**
+     * @param $key
+     * @param $value
+     * @return \Jchedev\Laravel\Http\Resources\Collection
+     */
+    public function addMeta($key, $value)
+    {
+        $additional = Arr::add($this->additional, 'meta.' . $key, $value);
+
+        return $this->additional($additional);
     }
 }

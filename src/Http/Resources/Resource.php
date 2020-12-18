@@ -19,7 +19,7 @@ class Resource extends JsonResource
     /**
      * @param $key
      * @param $value
-     * @return \Jchedev\Laravel\Http\Resources\Resource
+     * @return $this
      */
     public function addMeta($key, $value)
     {

@@ -78,6 +78,21 @@ class Builder extends EloquentBuilder
     }
 
     /**
+     * @param $value
+     * @return \Illuminate\Support\Collection
+     */
+    public function countBy($value)
+    {
+        $this->addSelect($value);
+
+        $this->addSelect(DB::raw('COUNT(id) as count'));
+
+        $this->groupBy($value);
+
+        return $this->pluck('count', $value);
+    }
+
+    /**
      * This count keeps in mind the limit applied to the query
      *
      * @param string $columns

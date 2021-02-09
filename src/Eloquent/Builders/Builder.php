@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class Builder extends EloquentBuilder
 {
+    protected $qualifyColumnsThrough = null;
+
     /*
      * New Methods
      */
@@ -75,6 +77,50 @@ class Builder extends EloquentBuilder
         }
 
         return $this->whereIn($this->getModel()->getKeyName(), (array)$value, $boolean, $not);
+    }
+
+    /**
+     * @param $class
+     * @param $method
+     * @return $this
+     */
+    public function applyScope($class, $method)
+    {
+        $object = new $class;
+
+        $this->qualifyColumnsUsing($object, function () use ($object, $method) {
+            $methodName = 'scope' . ucfirst($method);
+
+            $object->$methodName($this);
+        });
+
+        return $this;
+    }
+
+    /**
+     * @param $model
+     * @param callable $closure
+     */
+    public function qualifyColumnsUsing(Model $model, callable $closure)
+    {
+        $this->qualifyColumnsThrough = $model;
+
+        $closure();
+
+        $this->qualifyColumnsThrough = null;
+    }
+
+    /**
+     * @param \Illuminate\Database\Query\Expression|string $column
+     * @return string
+     */
+    public function qualifyColumn($column)
+    {
+        if (!is_null($this->qualifyColumnsThrough)) {
+            return $this->qualifyColumnsThrough->qualifyColumn($column);
+        }
+
+        return parent::qualifyColumn($column);
     }
 
     /**

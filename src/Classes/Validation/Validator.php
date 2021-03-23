@@ -3,6 +3,7 @@
 namespace Jchedev\Laravel\Classes\Validation;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class Validator extends \Illuminate\Validation\Validator
@@ -38,12 +39,12 @@ class Validator extends \Illuminate\Validation\Validator
     public function updateData($key, $value)
     {
         // This is the only way to return the new value through ->validated()
-        if (array_has($this->data, $key) === false) {
+        if (Arr::has($this->data, $key) === false) {
             $this->variablesToReturn[] = $key;
         }
 
         // Add/Replace the value from the validator's data object
-        array_set($this->data, $key, $value);
+        Arr::set($this->data, $key, $value);
 
         return $this;
     }
@@ -61,8 +62,8 @@ class Validator extends \Illuminate\Validation\Validator
         $validatedData = parent::validated();
 
         foreach ($this->variablesToReturn as $variable) {
-            if (!array_has($validatedData, $variable)) {
-                array_set($validatedData, $variable, data_get($this->getData(), $variable));
+            if (!Arr::has($validatedData, $variable)) {
+                Arr::set($validatedData, $variable, data_get($this->getData(), $variable));
             }
         }
 
@@ -78,7 +79,7 @@ class Validator extends \Illuminate\Validation\Validator
             $rules[$key] = self::formatRules($data);
         }
 
-        return parent::addRules($rules);
+        parent::addRules($rules);
     }
 
     /*

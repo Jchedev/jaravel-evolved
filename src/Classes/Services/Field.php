@@ -10,6 +10,11 @@ class Field
     protected $key;
 
     /**
+     * @var null
+     */
+    protected $as = null;
+
+    /**
      * @var bool
      */
     protected $editable = true;
@@ -41,6 +46,14 @@ class Field
     }
 
     /**
+     * @return string
+     */
+    public function getAs()
+    {
+        return $this->as;
+    }
+
+    /**
      * @param array $validationRules
      * @return $this
      */
@@ -66,6 +79,17 @@ class Field
     public function editable(bool $boolean = true)
     {
         $this->editable = $boolean;
+
+        return $this;
+    }
+
+    /**
+     * @param $value
+     * @return $this
+     */
+    public function as($value)
+    {
+        $this->as = $value;
 
         return $this;
     }

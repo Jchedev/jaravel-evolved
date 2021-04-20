@@ -490,7 +490,7 @@ abstract class Service
         $validationRules = [];
 
         foreach ($this->getFields() as $field) {
-            $validationRules[$field->getKey()] = $field->getValidationRules();
+            $validationRules[$field->getAs() ?: $field->getKey()] = $field->getValidationRules();
         }
 
         return $validationRules;
@@ -523,7 +523,7 @@ abstract class Service
 
         foreach ($this->getFields() as $field) {
             if ($field->isEditable()) {
-                $validationRules[$field->getKey()] = $field->getValidationRules();
+                $validationRules[$field->getAs() ?: $field->getKey()] = $field->getValidationRules();
             }
         }
 

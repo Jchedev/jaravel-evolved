@@ -158,22 +158,6 @@ abstract class Model extends EloquentModel implements CollectionOrModel
      */
 
     /**
-     * @param mixed $value
-     * @param null $field
-     * @return \Illuminate\Database\Eloquent\Model|null
-     */
-    public function resolveRouteBinding($value, $field = null)
-    {
-        if (!is_null($field) && preg_match('/^scope(.*)$/', $field, $match)) {
-            $scopeName = $match[1];
-
-            return $this->where($this->getRouteKeyName(), $value)->$scopeName()->first();
-        }
-
-        return parent::resolveRouteBinding($value, $field);
-    }
-
-    /**
      * Overwrite the Eloquent\Builder by a custom one with even more features
      *
      * @param \Illuminate\Database\Query\Builder $query

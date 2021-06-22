@@ -5,6 +5,7 @@ namespace Jchedev\Laravel\Eloquent\Models;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Jchedev\Laravel\Eloquent\Builders\Builder;
 use Jchedev\Laravel\Eloquent\Collections\Collection;
@@ -204,5 +205,23 @@ abstract class Model extends EloquentModel implements CollectionOrModel
         }
 
         return parent::setAttribute($key, $value);
+    }
+
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function count($value)
+    {
+        if (method_exists($this, $value)) {
+
+            if (!array_key_exists($attributeKey = Str::snake($value) . '_count', $this->attributes)) {
+                $this->loadCount($value);
+            }
+
+            return Arr::get($this->attributes, $attributeKey);
+        }
+
+        return parent::count($value);
     }
 }

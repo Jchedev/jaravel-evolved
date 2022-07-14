@@ -19,7 +19,7 @@ class Builder extends EloquentBuilder
 
     /**
      * @param array $arrayOfAttributes
-     * @return array|\Illuminate\Database\Eloquent\Collection
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function createMany(array $arrayOfAttributes = [])
     {
@@ -213,8 +213,8 @@ class Builder extends EloquentBuilder
 
     /**
      * @param $relationName
-     * @param string $type
-     * @return $this
+     * @param $type
+     * @return \Jchedev\Laravel\Eloquent\Builders\Builder
      */
     public function joinThroughRelation($relationName, $type = 'inner')
     {

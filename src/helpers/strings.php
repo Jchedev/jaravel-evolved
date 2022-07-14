@@ -37,7 +37,7 @@ function boolean_to_string($value, $true = 'true', $false = 'false'): string
  * @param $value
  * @return array|null
  */
-function null_if_empty($value): ?array
+function null_if_empty($value)
 {
     if (is_array($value)) {
         foreach ($value as $key => $line) {
@@ -55,7 +55,7 @@ function null_if_empty($value): ?array
  *
  * @param $string
  * @param string $convert_in
- * @return bool
+ * @return bool|int
  */
 function time_duration($string, $convert_in = 'second')
 {
@@ -71,9 +71,9 @@ function time_duration($string, $convert_in = 'second')
  *
  * @param $from
  * @param $to
- * @return bool|int
+ * @return int
  */
-function time_multiplier($from, $to)
+function time_multiplier($from, $to): int
 {
     $from = Str::singular(strtolower($from));
 
@@ -118,7 +118,7 @@ function time_multiplier($from, $to)
  * @param $html
  * @return mixed
  */
-function minify_html($html)
+function minify_html($html): string
 {
     $html = preg_replace('/<!--([^\[|(<!)].*)/', '', $html);
 

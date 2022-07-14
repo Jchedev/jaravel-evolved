@@ -96,6 +96,7 @@ abstract class Service
     /**
      * @param array $arrayOfAttributes
      * @return \Illuminate\Database\Eloquent\Collection
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function createMany(array $arrayOfAttributes): Collection
     {
@@ -146,8 +147,8 @@ abstract class Service
      */
     protected function afterCreatingMany(Collection $collection): Collection
     {
-        foreach ($collection as $item) {
-            $this->afterCreating($item);
+        foreach ($collection as $key => $item) {
+            $collection[$key] = $this->afterCreating($item);
         }
 
         return $collection;
@@ -163,7 +164,7 @@ abstract class Service
      * @return \Illuminate\Database\Eloquent\Model
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function update(Model $model, array $attributes)
+    public function update(Model $model, array $attributes): Model
     {
         $validator = $this->validatorForUpdate($model, $attributes);
 
@@ -214,7 +215,8 @@ abstract class Service
     /**
      * @param \Illuminate\Database\Eloquent\Collection $collection
      * @param array $attributes
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return mixed
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function updateMany(Collection $collection, array $attributes)
     {
@@ -271,8 +273,8 @@ abstract class Service
      */
     protected function afterUpdatingMany(Collection $collection): Collection
     {
-        foreach ($collection as $item) {
-            $this->afterUpdating($item);
+        foreach ($collection as $key => $item) {
+            $collection[$key] = $this->afterUpdating($item);
         }
 
         return $collection;
@@ -284,7 +286,7 @@ abstract class Service
 
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
-     * @throws \Exception
+     * @return void
      */
     public function delete(Model $model)
     {
@@ -523,6 +525,7 @@ abstract class Service
      * Return the validator used during an Update on a model
      * Can be overwritten by a child to add ->after(...) to it
      *
+     * @param \Illuminate\Database\Eloquent\Model $model
      * @param array $data
      * @return \Illuminate\Validation\Validator
      */
@@ -584,6 +587,7 @@ abstract class Service
     /**
      * @param array $validators
      * @return array
+     * @throws \Illuminate\Validation\ValidationException
      */
     protected function validateMany(array $validators)
     {

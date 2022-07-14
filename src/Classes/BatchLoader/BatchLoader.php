@@ -1,8 +1,11 @@
 <?php
 
-namespace Jchedev\Laravel\Classes\LazyLoader;
+namespace Jchedev\Laravel\Classes\BatchLoader;
 
-class LazyLoader
+/**
+ * Used to apply logic on a system of small batches
+ */
+class BatchLoader
 {
     protected $logic;
 
@@ -27,7 +30,7 @@ class LazyLoader
      * @param callable $logic
      * @return $this
      */
-    public function onResults(callable $logic): LazyLoader
+    public function onResults(callable $logic): self
     {
         $this->onResults = $logic;
 

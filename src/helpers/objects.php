@@ -6,7 +6,7 @@
  * @param $object
  * @return string
  */
-function get_class_basename($object)
+function get_class_basename($object): string
 {
     $className = is_object($object) ? get_class($object) : $object;
 
@@ -23,7 +23,7 @@ function get_class_basename($object)
  * @param $object
  * @return null|string
  */
-function get_class_namespace($object)
+function get_class_namespace($object): ?string
 {
     $className = is_object($object) ? get_class($object) : $object;
 
@@ -40,7 +40,7 @@ function get_class_namespace($object)
  * @param $variable
  * @return string
  */
-function get_variable_type($variable)
+function get_variable_type($variable): string
 {
     if ($variable instanceof Closure) {
         return 'closure';

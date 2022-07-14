@@ -2,6 +2,9 @@
 
 namespace Jchedev\Laravel\Classes\GPS;
 
+/**
+ * Represents a GPS point (longitude + latitude) and could be extended in multiple ways
+ */
 class GPSCoordinates
 {
     protected $latitude;

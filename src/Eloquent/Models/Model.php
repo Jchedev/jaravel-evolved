@@ -164,7 +164,7 @@ abstract class Model extends EloquentModel implements CollectionOrModel
      * @param \Illuminate\Database\Query\Builder $query
      * @return Builder
      */
-    public function newEloquentBuilder($query)
+    public function newEloquentBuilder($query): Builder
     {
         return new Builder($query);
     }
@@ -175,7 +175,7 @@ abstract class Model extends EloquentModel implements CollectionOrModel
      * @param array $models
      * @return \Jchedev\Laravel\Eloquent\Collections\Collection
      */
-    public function newCollection(array $models = [])
+    public function newCollection(array $models = []): Collection
     {
         return new Collection($models);
     }
@@ -206,22 +206,22 @@ abstract class Model extends EloquentModel implements CollectionOrModel
 
         return parent::setAttribute($key, $value);
     }
-
+    
     /**
      * @param $value
-     * @return mixed
+     * @return array|\ArrayAccess|mixed
+     * @throws \Exception
      */
-    public function count($value)
+    public function countRelation($value)
     {
-        if (method_exists($this, $value)) {
-
-            if (!array_key_exists($attributeKey = Str::snake($value) . '_count', $this->attributes)) {
-                $this->loadCount($value);
-            }
-
-            return Arr::get($this->attributes, $attributeKey);
+        if (!method_exists($this, $value)) {
+            throw new \Exception('Unknown relation ' . $value);
         }
 
-        return parent::count($value);
+        if (!array_key_exists($attributeKey = Str::snake($value) . '_count', $this->attributes)) {
+            $this->loadCount($value);
+        }
+
+        return Arr::get($this->attributes, $attributeKey);
     }
 }

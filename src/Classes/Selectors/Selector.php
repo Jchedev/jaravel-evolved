@@ -258,8 +258,8 @@ class Selector
     }
 
     /**
-     * @param string $columns
-     * @return mixed
+     * @param $columns
+     * @return int
      */
     public function count($columns = '*')
     {

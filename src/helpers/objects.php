@@ -35,14 +35,14 @@ function get_class_namespace($object)
 }
 
 /**
- * The default gettype() method doesnt work if a Closure. This method does.
+ * The default gettype() method doesn't work if a Closure. This method does.
  *
  * @param $variable
  * @return string
  */
 function get_variable_type($variable)
 {
-    if (is_object($variable) && ($variable instanceof Closure)) {
+    if ($variable instanceof Closure) {
         return 'closure';
     }
 

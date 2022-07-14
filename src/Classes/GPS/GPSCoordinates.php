@@ -24,7 +24,7 @@ class GPSCoordinates
     /**
      * @return bool
      */
-    public function isValid()
+    public function isValid(): bool
     {
         return !is_null($this->latitude) && !is_null($this->longitude);
     }

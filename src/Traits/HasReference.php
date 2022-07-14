@@ -2,6 +2,8 @@
 
 namespace Jchedev\Laravel\Traits;
 
+use Illuminate\Support\Str;
+
 trait HasReference
 {
     protected $referenceColumn = 'reference';
@@ -30,7 +32,7 @@ trait HasReference
      */
     public function generateReference()
     {
-        return (string)\Illuminate\Support\Str::uuid();
+        return (string)Str::uuid();
     }
 
     /**

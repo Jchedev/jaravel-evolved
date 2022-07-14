@@ -2,6 +2,8 @@
 
 namespace Jchedev\Laravel\Exceptions;
 
+use Illuminate\Support\Arr;
+
 class UnexpectedArgumentException extends \UnexpectedValueException
 {
     /**
@@ -14,7 +16,7 @@ class UnexpectedArgumentException extends \UnexpectedValueException
      */
     public function __construct($argument, array $allowedTypes = [], int $code = 0, \Throwable $previous = null)
     {
-        $backtrace = array_get(debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2), 1);
+        $backtrace = Arr::get(debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2), 1);
 
         if (!is_null($backtrace)) {
             $parameter = $this->getReflectionParameter($backtrace['class'], $backtrace['function'], $argument);
@@ -24,7 +26,7 @@ class UnexpectedArgumentException extends \UnexpectedValueException
 
                 $message .= ' must be of the type ' . implode(' or ', $allowedTypes) . ',';
 
-                $message .= ' ' . get_variable_type(array_get($backtrace['args'], $parameter->getPosition())) . ' given.';
+                $message .= ' ' . get_variable_type(Arr::get($backtrace['args'], $parameter->getPosition())) . ' given.';
             }
         }
 
@@ -41,7 +43,7 @@ class UnexpectedArgumentException extends \UnexpectedValueException
      * @param $argument
      * @return \ReflectionParameter|null
      */
-    protected function getReflectionParameter($class, $function, $argument)
+    protected function getReflectionParameter($class, $function, $argument): ?\ReflectionParameter
     {
         try {
             return new \ReflectionParameter([$class, $function], is_integer($argument) ? ($argument - 1) : $argument);

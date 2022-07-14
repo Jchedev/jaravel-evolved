@@ -8,15 +8,14 @@
     }
   ],
   "require": {
-    "php": ">=7.1",
-    "laravel/framework": ">=5.0"
+    "php": "^8.0.2",
+    "laravel/framework": "^9.19"
   },
   "autoload": {
     "psr-4": {
       "Jchedev\\Laravel\\": "src/"
     },
     "files": [
-      "src/helpers/arrays.php",
       "src/helpers/objects.php",
       "src/helpers/strings.php"
     ]

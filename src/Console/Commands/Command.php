@@ -11,22 +11,17 @@ abstract class Command extends \Illuminate\Console\Command
     /**
      * Data used during the log (if activated)
      */
-    protected $return = [];
+    protected array $return = [];
 
     /**
      * @var int
      */
-    protected $activeTab = 0;
+    protected int $activeTab = 0;
 
     /**
      * Should we also count the number of queries? Resource heavy
      */
-    protected $countQueries = false;
-
-    /**
-     * @var
-     */
-    protected $activeProgressBar;
+    protected bool $countQueries = false;
 
     /**
      * This method is called by the handle() method
@@ -54,7 +49,7 @@ abstract class Command extends \Illuminate\Console\Command
      */
     public function handle()
     {
-        if ($this->countQueries == true || $this->option('with-sql') === true) {
+        if ($this->countQueries === true || $this->option('with-sql') === true) {
             $this->countQueries = true;
 
             $this->enableQueryLog();
@@ -118,6 +113,7 @@ abstract class Command extends \Illuminate\Console\Command
      * This method is called if an error is generated during the execution
      *
      * @param \Exception $exception
+     * @return false|void
      */
     protected function onError(\Exception $exception)
     {
@@ -163,19 +159,6 @@ abstract class Command extends \Illuminate\Console\Command
     }
 
     /**
-     * Custom info message with step number at the beginning
-     *
-     * @param $message
-     * @param null $verbosity
-     */
-    public function step($message, $verbosity = null)
-    {
-        static $pos = 1;
-
-        $this->line($pos++ . '. ' . $message, null, $verbosity);
-    }
-    
-    /**
      * @param $integer
      * @throws \Exception
      */
@@ -190,15 +173,8 @@ abstract class Command extends \Illuminate\Console\Command
 
             try {
                 $integer();
-            }
-            catch (\Exception $exception) {
-                // Do nothing for now
-            }
-
-            $this->activeTab = $currentTab;
-
-            if (isset($exception)) {
-                throw $exception;
+            } finally {
+                $this->activeTab = $currentTab;
             }
         }
     }
@@ -206,7 +182,7 @@ abstract class Command extends \Illuminate\Console\Command
     /**
      * @return string
      */
-    protected function tabString()
+    protected function tabString(): string
     {
         return str_repeat('  ', $this->activeTab);
     }
@@ -219,83 +195,5 @@ abstract class Command extends \Illuminate\Console\Command
     public function line($string, $style = null, $verbosity = null)
     {
         parent::line($this->tabString() . $string, $style, $verbosity);
-    }
-
-    /**
-     * @param string $message
-     * @param null $verbosity
-     */
-    public function info($message, $verbosity = null)
-    {
-        parent::info($message, $verbosity);
-    }
-
-    /**
-     * @param string $message
-     * @param null $verbosity
-     */
-    public function comment($message, $verbosity = null)
-    {
-        parent::comment($message, $verbosity);
-    }
-
-    /**
-     * @param string $message
-     * @param null $verbosity
-     */
-    public function error($message, $verbosity = null)
-    {
-        parent::error($message, $verbosity);
-    }
-
-    /**
-     * Create a new progressbar and save it as the command level for future use
-     *
-     * @param $nbLines
-     * @return mixed
-     */
-    public function createProgressBar($nbLines)
-    {
-        $this->activeProgressBar = $this->output->createProgressBar($nbLines);
-
-        return $this->activeProgressBar;
-    }
-
-    /**
-     * Advance the progressbar (if active)
-     *
-     * @param int $nbLinesMoved
-     */
-    public function advanceProgressBar($nbLinesMoved = 1)
-    {
-        if ($this->hasActiveProgressBar() === false) {
-            return;
-        }
-
-        $this->activeProgressBar->advance($nbLinesMoved);
-    }
-
-    /**
-     * Close the progressbar (if active)
-     */
-    public function finishProgressBar()
-    {
-        if ($this->hasActiveProgressBar() === false) {
-            return false;
-        }
-
-        $this->activeProgressBar->finish();
-
-        $this->activeProgressBar = null;
-    }
-
-    /**
-     * Check if a progress bar is active
-     *
-     * @return bool
-     */
-    public function hasActiveProgressBar()
-    {
-        return !is_null($this->activeProgressBar);
     }
 }

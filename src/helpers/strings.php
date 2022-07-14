@@ -1,12 +1,15 @@
 <?php
 
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+
 /**
  * Sanitize a string by triming it and removing weird characters
  *
  * @param $value
  * @return string
  */
-function sanitize_string($value)
+function sanitize_string($value): string
 {
     if (!is_null($value)) {
         $value = trim($value);
@@ -23,7 +26,7 @@ function sanitize_string($value)
  * @param string $false
  * @return string
  */
-function boolean_to_string($value, $true = 'true', $false = 'false')
+function boolean_to_string($value, $true = 'true', $false = 'false'): string
 {
     return ($value) ? $true : $false;
 }
@@ -34,7 +37,7 @@ function boolean_to_string($value, $true = 'true', $false = 'false')
  * @param $value
  * @return array|null
  */
-function null_if_empty($value)
+function null_if_empty($value): ?array
 {
     if (is_array($value)) {
         foreach ($value as $key => $line) {
@@ -72,9 +75,9 @@ function time_duration($string, $convert_in = 'second')
  */
 function time_multiplier($from, $to)
 {
-    $from = str_singular(strtolower($from));
+    $from = Str::singular(strtolower($from));
 
-    $to = str_singular(strtolower($to));
+    $to = Str::singular(strtolower($to));
 
     if ($from == $to) {
         return 1;
@@ -106,7 +109,7 @@ function time_multiplier($from, $to)
         ]
     ];
 
-    return array_get($multipliers, $from . '.' . $to, false);
+    return Arr::get($multipliers, $from . '.' . $to, false);
 }
 
 /**

@@ -1,5 +1,5 @@
 {
-  "name": "jchedev/laravel-evolved",
+  "name": "jchedev/jaravel-evolved",
   "description": "An even better version of some Laravel classes",
   "authors": [
     {
@@ -9,7 +9,7 @@
   ],
   "require": {
     "php": "^8.0.2",
-    "laravel/framework": "^9.19|^10"
+    "laravel/framework": "^9|^10"
   },
   "autoload": {
     "psr-4": {

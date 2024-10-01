@@ -248,10 +248,24 @@ class Builder extends EloquentBuilder
         $columns = !is_array($columns) ? [$columns] : $columns;
 
         foreach ($columns as $key => $column) {
-            $columns[$key] = $this->qualifyColumn($column);
+            if (is_string($column)) {
+                $columns[$key] = $this->qualifyColumn($column);
+            }
         }
 
         return parent::select($columns);
+    }
+
+    /**
+     * @param $column
+     * @param $key
+     * @return \Illuminate\Support\Collection
+     */
+    public function pluck($column, $key = null)
+    {
+        $column = $this->qualifyColumn($column);
+
+        return parent::pluck($column, $key);
     }
 
     /**

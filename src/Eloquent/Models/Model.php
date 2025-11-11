@@ -206,6 +206,15 @@ abstract class Model extends EloquentModel implements CollectionOrModel
 
         return parent::setAttribute($key, $value);
     }
+
+    /**
+     * @param $key
+     * @return array|\ArrayAccess|mixed
+     */
+    public function unsetAttribute($key)
+    {
+        return Arr::pull($this->attributes, $key);
+    }
     
     /**
      * @param $value

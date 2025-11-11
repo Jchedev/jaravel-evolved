@@ -215,7 +215,21 @@ abstract class Model extends EloquentModel implements CollectionOrModel
     {
         return Arr::pull($this->attributes, $key);
     }
-    
+
+    /**
+     * @param array $keys
+     * @return array
+     */
+    public function unsetAttributes(array $keys)
+    {
+        $response = [];
+        foreach ($keys as $key) {
+            $response[$key] = $this->unsetAttribute($key);
+        }
+
+        return $response;
+    }
+
     /**
      * @param $value
      * @return array|\ArrayAccess|mixed
